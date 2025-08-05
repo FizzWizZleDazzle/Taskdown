@@ -174,3 +174,16 @@
 .column-content::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
 }
+
+/* Drag & Drop styles */
+.column-content--over {
+  background-color: #f0f9ff;
+  border: 2px dashed #3b82f6;
+  border-radius: 8px;
+}
+
+.empty-column.column-content--over {
+  border-color: #3b82f6;
+  background-color: #f0f9ff;
+  color: #3b82f6;
+}

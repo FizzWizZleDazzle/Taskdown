@@ -1,4 +1,6 @@
 import React from 'react';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { Task, ChecklistItem } from '../types';
 import { COLORS } from '../constants';
 import './Card.css';
@@ -6,9 +8,27 @@ import './Card.css';
 interface CardProps {
   task: Task;
   onEdit: (task: Task) => void;
+  isDragging?: boolean;
 }
 
-const Card: React.FC<CardProps> = ({ task, onEdit }) => {
+const Card: React.FC<CardProps> = ({ task, onEdit, isDragging = false }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging: isSortableDragging,
+  } = useSortable({
+    id: task.id,
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging || isSortableDragging ? 0.5 : 1,
+  };
+
   const getTypeColor = (type: string) => {
     return COLORS.TYPE[type as keyof typeof COLORS.TYPE] || COLORS.TYPE.DEFAULT;
   };
@@ -26,124 +46,148 @@ const Card: React.FC<CardProps> = ({ task, onEdit }) => {
     return Math.round((getCompletedCount(items) / items.length) * 100);
   };
 
+  const handleClick = (e: React.MouseEvent) => {
+    // Only handle click if we're not dragging
+    if (!isSortableDragging && !isDragging) {
+      e.stopPropagation();
+      onEdit(task);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onEdit(task);
+    }
+  };
+
   return (
     <div 
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
       className="card" 
       data-status={task.status} 
-      onClick={() => onEdit(task)}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          onEdit(task);
-        }
-      }}
       tabIndex={0}
       role="button"
       aria-label={`Edit task ${task.id}: ${task.title}`}
     >
-      <div className="card-header">
-        <div className="card-id">{task.id}</div>
-        <div className="card-badges">
-          <span 
-            className="badge type-badge" 
-            style={{ backgroundColor: getTypeColor(task.type) }}
-          >
-            {task.type}
-          </span>
-          <span 
-            className="badge priority-badge" 
-            style={{ backgroundColor: getPriorityColor(task.priority) }}
-          >
-            {task.priority}
-          </span>
+      {/* Drag handle - top section */}
+      <div {...listeners} className="card-drag-handle">
+        <div className="card-header">
+          <div className="card-id">{task.id}</div>
+          <div className="card-badges">
+            <span 
+              className="badge type-badge" 
+              style={{ backgroundColor: getTypeColor(task.type) }}
+            >
+              {task.type}
+            </span>
+            <span 
+              className="badge priority-badge" 
+              style={{ backgroundColor: getPriorityColor(task.priority) }}
+            >
+              {task.priority}
+            </span>
+          </div>
         </div>
       </div>
       
-      <h3 className="card-title">{task.title}</h3>
-      
-      <div className="card-meta">
-        {task.storyPoints && (
-          <div className="meta-item">
-            <span className="meta-label">Story Points:</span>
-            <span className="story-points">{task.storyPoints}</span>
+      {/* Click to edit area - rest of the card */}
+      <div 
+        onClick={handleClick} 
+        onKeyDown={handleKeyDown} 
+        className="card-content"
+        tabIndex={0} 
+        role="button" 
+        aria-label={`Edit task ${task.id}: ${task.title}`}
+      >
+        <h3 className="card-title">{task.title}</h3>
+        
+        <div className="card-meta">
+          {task.storyPoints && (
+            <div className="meta-item">
+              <span className="meta-label">Story Points:</span>
+              <span className="story-points">{task.storyPoints}</span>
+            </div>
+          )}
+          {task.sprint && (
+            <div className="meta-item">
+              <span className="meta-label">Sprint:</span>
+              <span>{task.sprint}</span>
+            </div>
+          )}
+          {task.epic && (
+            <div className="meta-item">
+              <span className="meta-label">Epic:</span>
+              <span className="epic-name">{task.epic}</span>
+            </div>
+          )}
+          {task.assignee && (
+            <div className="meta-item">
+              <span className="meta-label">Assignee:</span>
+              <span>{task.assignee}</span>
+            </div>
+          )}
+        </div>
+
+        <p className="card-description">{task.description}</p>
+
+        {task.acceptanceCriteria.length > 0 && (
+          <div className="progress-section">
+            <div className="progress-header">
+              <span>Acceptance Criteria</span>
+              <span className="progress-count">
+                {getCompletedCount(task.acceptanceCriteria)}/{task.acceptanceCriteria.length}
+              </span>
+            </div>
+            <div className="progress-bar">
+              <div 
+                className="progress-fill" 
+                style={{ width: `${getProgressPercentage(task.acceptanceCriteria)}%` }}
+              />
+            </div>
           </div>
         )}
-        {task.sprint && (
-          <div className="meta-item">
-            <span className="meta-label">Sprint:</span>
-            <span>{task.sprint}</span>
+
+        {task.technicalTasks.length > 0 && (
+          <div className="progress-section">
+            <div className="progress-header">
+              <span>Technical Tasks</span>
+              <span className="progress-count">
+                {getCompletedCount(task.technicalTasks)}/{task.technicalTasks.length}
+              </span>
+            </div>
+            <div className="progress-bar">
+              <div 
+                className="progress-fill" 
+                style={{ width: `${getProgressPercentage(task.technicalTasks)}%` }}
+              />
+            </div>
           </div>
         )}
-        {task.epic && (
-          <div className="meta-item">
-            <span className="meta-label">Epic:</span>
-            <span className="epic-name">{task.epic}</span>
-          </div>
-        )}
-        {task.assignee && (
-          <div className="meta-item">
-            <span className="meta-label">Assignee:</span>
-            <span>{task.assignee}</span>
+
+        {(task.dependencies.length > 0 || task.blocks.length > 0) && (
+          <div className="card-footer">
+            {task.dependencies.length > 0 && (
+              <div className="dependencies">
+                <span className="deps-label">Depends on:</span>
+                {task.dependencies.map(dep => (
+                  <span key={dep} className="dep-tag">{dep}</span>
+                ))}
+              </div>
+            )}
+            {task.blocks.length > 0 && (
+              <div className="dependencies">
+                <span className="deps-label">Blocks:</span>
+                {task.blocks.map(block => (
+                  <span key={block} className="dep-tag">{block}</span>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
-
-      <p className="card-description">{task.description}</p>
-
-      {task.acceptanceCriteria.length > 0 && (
-        <div className="progress-section">
-          <div className="progress-header">
-            <span>Acceptance Criteria</span>
-            <span className="progress-count">
-              {getCompletedCount(task.acceptanceCriteria)}/{task.acceptanceCriteria.length}
-            </span>
-          </div>
-          <div className="progress-bar">
-            <div 
-              className="progress-fill" 
-              style={{ width: `${getProgressPercentage(task.acceptanceCriteria)}%` }}
-            />
-          </div>
-        </div>
-      )}
-
-      {task.technicalTasks.length > 0 && (
-        <div className="progress-section">
-          <div className="progress-header">
-            <span>Technical Tasks</span>
-            <span className="progress-count">
-              {getCompletedCount(task.technicalTasks)}/{task.technicalTasks.length}
-            </span>
-          </div>
-          <div className="progress-bar">
-            <div 
-              className="progress-fill" 
-              style={{ width: `${getProgressPercentage(task.technicalTasks)}%` }}
-            />
-          </div>
-        </div>
-      )}
-
-      {(task.dependencies.length > 0 || task.blocks.length > 0) && (
-        <div className="card-footer">
-          {task.dependencies.length > 0 && (
-            <div className="dependencies">
-              <span className="deps-label">Depends on:</span>
-              {task.dependencies.map(dep => (
-                <span key={dep} className="dep-tag">{dep}</span>
-              ))}
-            </div>
-          )}
-          {task.blocks.length > 0 && (
-            <div className="dependencies">
-              <span className="deps-label">Blocks:</span>
-              {task.blocks.map(block => (
-                <span key={block} className="dep-tag">{block}</span>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 };

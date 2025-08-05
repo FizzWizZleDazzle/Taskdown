@@ -17,6 +17,8 @@ interface BoardProps {
   onTaskCreate: (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => void;
   editingState?: EditingState;
   onEditingStateChange?: (state: EditingState) => void;
+  onFileImport: (file: File) => void;
+  onExport: () => void;
 }
 
 const Board: React.FC<BoardProps> = ({ 
@@ -24,7 +26,9 @@ const Board: React.FC<BoardProps> = ({
   onTaskUpdate, 
   onTaskCreate,
   editingState: externalEditingState,
-  onEditingStateChange 
+  onEditingStateChange,
+  onFileImport,
+  onExport
 }) => {
   const [columnType, setColumnType] = useState<ColumnType>(COLUMN_TYPES.STATUS);
   
@@ -42,15 +46,7 @@ const Board: React.FC<BoardProps> = ({
   const selectedTask = editingState.selectedTaskId 
     ? tasks.find(task => task.id === editingState.selectedTaskId) || null
     : null;
-  onFileImport: (file: File) => void;
-  onExport: () => void;
-}
 
-const Board: React.FC<BoardProps> = ({ tasks, onTaskUpdate, onTaskCreate, onFileImport, onExport }) => {
-  const [columnType, setColumnType] = useState<ColumnType>(COLUMN_TYPES.STATUS);
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
 
   const columns = useMemo(() => {

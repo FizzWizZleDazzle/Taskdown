@@ -1,33 +1,69 @@
 # Taskdown
 
-A workspace containing the Taskdown parser and future web application. The parser converts Jira-style Markdown to structured board data and back.
+![CI](https://github.com/FizzWizZleDazzle/Taskdown/workflows/CI/badge.svg)
+![Deploy](https://github.com/FizzWizZleDazzle/Taskdown/workflows/Deploy%20to%20GitHub%20Pages/badge.svg)
+
+A React TypeScript application with a visual Kanban board interface and parser that converts Jira-style Markdown to structured board data and back. Perfect for managing development tasks with seamless integration between human-readable documentation and programmatic task management.
+
+## 🚀 Live Demo
+
+Visit the live application: [https://FizzWizZleDazzle.github.io/Taskdown](https://FizzWizZleDazzle.github.io/Taskdown)
 
 ## Structure
 
-- `packages/taskdown-parser/` - Core parser and serializer library
-- Future: Web application for visual board management
+- `src/` - React TypeScript application with visual Kanban board
+- `src/parser.ts` - Core parser for Jira-style Markdown  
+- `src/serializer.ts` - Serializer for converting back to Markdown
+- `src/components/` - React components for the board UI
+- `src/cli.ts` - Command-line interface for parsing operations
 
 ## Quick Start
 
-From the workspace root:
+### Web Application
+
+Visit the live demo at [https://FizzWizZleDazzle.github.io/Taskdown](https://FizzWizZleDazzle.github.io/Taskdown) or run locally:
+
+```bash
+# Install dependencies
+npm install
+
+# Start development server
+npm start
+
+# Build for production
+npm run build
+```
+
+### CLI Usage
+
+From the project root:
 
 ```bash
 # Install all dependencies
 npm install
 
-# Build the parser
-npm run build:parser
+# Start the web application
+npm start
+
+# Build the application
+npm run build
 
 # Test the parser
-npm run test:parser
+npm test
 
 # Use the CLI
-npm run dev:parser -- parse example.md
+npm run parse -- parse example.md
 ```
 
-## Packages
+## 🎯 Features
 
-### Taskdown Parser (`packages/taskdown-parser/`)
+### Visual Kanban Board
+- **Drag & Drop**: Move cards between epics and reorder within epics
+- **Real-time Updates**: Changes persist automatically using localStorage
+- **Responsive Design**: Works on desktop and mobile devices
+- **Card Metadata**: Display all Jira-style metadata in an organized layout
+
+### Parser & CLI
 
 A parser and serializer for converting Jira-style Markdown to structured board data and back. Perfect for managing development epics and cards in a human-readable Markdown format while maintaining the ability to process the data programmatically.
 
@@ -41,14 +77,27 @@ A parser and serializer for converting Jira-style Markdown to structured board d
 - **Round-trip conversion** maintains data integrity
 - **TypeScript support** with full type definitions
 
-## Installation
+## Installation & Development
+
+### Prerequisites
+- Node.js 18.x or 20.x
+- npm
+
+### Setup
 
 ```bash
-# From workspace root
+# Clone the repository
+git clone https://github.com/FizzWizZleDazzle/Taskdown.git
+cd Taskdown
+
+# Install dependencies
 npm install
 
-# Build the parser
-npm run build:parser
+# Start development server
+npm start
+
+# Build for production
+npm run build
 ```
 
 ## Usage
@@ -140,28 +189,47 @@ npm run dev:parser -- help
 
 ## Development
 
+### CI/CD Pipeline
+
+This project uses GitHub Actions for continuous integration and deployment:
+
+- **CI Workflow**: Runs on every push and pull request to `main` and `develop` branches
+  - Tests on Node.js 18.x and 20.x
+  - Runs unit tests and integration tests
+  - Builds the application
+  - Tests CLI functionality
+
+- **Deploy Workflow**: Automatically deploys to GitHub Pages on push to `main` branch
+  - Builds the production application
+  - Deploys to GitHub Pages
+  - Available at: https://FizzWizZleDazzle.github.io/Taskdown
+
 ### Build
 ```bash
-# Build all packages
+# Build the application
 npm run build
 
-# Build specific package
-npm run build:parser
+# The build output will be in the dist/ directory
+# This is what gets deployed to GitHub Pages
 ```
 
 ### Test
 ```bash
-# Test all packages
+# Run all tests
 npm test
 
-# Test specific package
-npm run test:parser
+# Run tests in watch mode
+npm run test:watch
 ```
 
 ### Development CLI
 ```bash
-npm run dev:parser -- <command> <args>
+npm run parse -- <command> <args>
 ```
+
+### GitHub Copilot Integration
+
+This project includes comprehensive GitHub Copilot instructions in `.github/copilot-instructions.md` to help AI assistants understand the project structure, coding patterns, and development guidelines. This enables more accurate and helpful code suggestions when working with the codebase.
 
 ## API Reference
 

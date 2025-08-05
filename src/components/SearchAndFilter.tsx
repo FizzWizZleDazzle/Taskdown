@@ -1,24 +1,7 @@
 import React from 'react';
-import { Task, TaskType, Priority, TaskStatus } from '../types';
+import { Task, SearchAndFilterState, defaultSearchAndFilterState } from '../types';
+import { hasActiveSearchOrFilter } from '../filterUtils';
 import './SearchAndFilter.css';
-
-export interface SearchAndFilterState {
-  searchText: string;
-  filterPriority: Priority | 'All';
-  filterType: TaskType | 'All';
-  filterStatus: TaskStatus | 'All';
-  filterEpic: string | 'All';
-  filterSprint: string | 'All';
-}
-
-export const defaultSearchAndFilterState: SearchAndFilterState = {
-  searchText: '',
-  filterPriority: 'All',
-  filterType: 'All',
-  filterStatus: 'All',
-  filterEpic: 'All',
-  filterSprint: 'All'
-};
 
 interface SearchAndFilterProps {
   tasks: Task[];
@@ -53,12 +36,7 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({
     onSearchAndFilterChange(defaultSearchAndFilterState);
   };
 
-  const hasActiveFilters = searchAndFilter.searchText !== '' ||
-    searchAndFilter.filterPriority !== 'All' ||
-    searchAndFilter.filterType !== 'All' ||
-    searchAndFilter.filterStatus !== 'All' ||
-    searchAndFilter.filterEpic !== 'All' ||
-    searchAndFilter.filterSprint !== 'All';
+  const hasActiveFilters = hasActiveSearchOrFilter(searchAndFilter);
 
   return (
     <div className="search-and-filter">

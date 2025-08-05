@@ -1,5 +1,4 @@
-import { Task } from './types';
-import { SearchAndFilterState } from './components/SearchAndFilter';
+import { Task, SearchAndFilterState } from './types';
 
 /**
  * Applies search and filter criteria to a list of tasks
@@ -34,7 +33,7 @@ export function filterTasks(tasks: Task[], searchAndFilter: SearchAndFilterState
 
     // Epic filter
     if (searchAndFilter.filterEpic !== 'All') {
-      if (!task.epic && searchAndFilter.filterEpic !== '') {
+      if (!task.epic && searchAndFilter.filterEpic !== 'All') {
         return false;
       }
       if (task.epic !== searchAndFilter.filterEpic) {
@@ -44,7 +43,7 @@ export function filterTasks(tasks: Task[], searchAndFilter: SearchAndFilterState
 
     // Sprint filter
     if (searchAndFilter.filterSprint !== 'All') {
-      if (!task.sprint && searchAndFilter.filterSprint !== '') {
+      if (!task.sprint && searchAndFilter.filterSprint !== 'All') {
         return false;
       }
       if (task.sprint !== searchAndFilter.filterSprint) {

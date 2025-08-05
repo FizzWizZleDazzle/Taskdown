@@ -1,24 +1,5 @@
 import { filterTasks, hasActiveSearchOrFilter, getActiveFiltersSummary } from '../filterUtils';
-import { Task } from '../types';
-
-// Import the types from SearchAndFilter without the CSS import issue
-export interface SearchAndFilterState {
-  searchText: string;
-  filterPriority: 'Critical' | 'High' | 'Medium' | 'Low' | 'All';
-  filterType: 'Epic' | 'Story' | 'Task' | 'Bug' | 'All';
-  filterStatus: 'Todo' | 'In Progress' | 'In Review' | 'Done' | 'All';
-  filterEpic: string | 'All';
-  filterSprint: string | 'All';
-}
-
-export const defaultSearchAndFilterState: SearchAndFilterState = {
-  searchText: '',
-  filterPriority: 'All',
-  filterType: 'All',
-  filterStatus: 'All',
-  filterEpic: 'All',
-  filterSprint: 'All'
-};
+import { Task, SearchAndFilterState, defaultSearchAndFilterState } from '../types';
 
 // Sample tasks for testing
 const sampleTasks: Task[] = [

@@ -16,7 +16,8 @@ import { TASK_STATUSES, COLUMN_TYPES, COLORS } from '../constants';
 import { filterTasks, hasActiveSearchOrFilter } from '../filterUtils';
 import Card from './Card';
 import TaskModal from './TaskModal';
-import SearchAndFilter, { SearchAndFilterState, defaultSearchAndFilterState } from './SearchAndFilter';
+import SearchAndFilter from './SearchAndFilter';
+import { SearchAndFilterState, defaultSearchAndFilterState } from '../types';
 import './Board.css';
 
 // Type guard function for TaskStatus validation

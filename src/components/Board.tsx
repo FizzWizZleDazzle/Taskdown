@@ -236,6 +236,40 @@ const Board: React.FC<BoardProps> = ({ tasks, onTaskUpdate, onTaskCreate, onFile
     return columnTasks.map(task => task.id);
   }, []);
 
+  // File drag & drop handlers
+  const handleFileInputChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && file.type === 'text/markdown') {
+      onFileImport(file);
+    } else if (file) {
+      alert('Please select a valid Markdown (.md) file.');
+    }
+    // Reset input value to allow re-importing the same file
+    event.target.value = '';
+  }, [onFileImport]);
+
+  const handleFileDragOver = useCallback((event: React.DragEvent) => {
+    event.preventDefault();
+    setIsDragOver(true);
+  }, []);
+
+  const handleFileDragLeave = useCallback((event: React.DragEvent) => {
+    event.preventDefault();
+    setIsDragOver(false);
+  }, []);
+
+  const handleFileDrop = useCallback((event: React.DragEvent) => {
+    event.preventDefault();
+    setIsDragOver(false);
+    
+    const file = event.dataTransfer.files[0];
+    if (file && file.type === 'text/markdown') {
+      onFileImport(file);
+    } else if (file) {
+      alert('Please drop a valid Markdown (.md) file.');
+    }
+  }, [onFileImport]);
+
   return (
     <DndContext
       sensors={sensors}
@@ -243,7 +277,12 @@ const Board: React.FC<BoardProps> = ({ tasks, onTaskUpdate, onTaskCreate, onFile
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="board">
+      <div 
+        className={`board ${isDragOver ? 'drag-over' : ''}`}
+        onDragOver={handleFileDragOver}
+        onDragLeave={handleFileDragLeave}
+        onDrop={handleFileDrop}
+      >
         <div className="board-header">
           <h1>Taskdown Board</h1>
           <div className="board-controls">
@@ -260,98 +299,50 @@ const Board: React.FC<BoardProps> = ({ tasks, onTaskUpdate, onTaskCreate, onFile
                 <option value={COLUMN_TYPES.SPRINT}>Sprint</option>
               </select>
             </div>
+
+            <div className="file-controls">
+              <input
+                type="file"
+                id="file-input"
+                accept=".md,text/markdown"
+                onChange={handleFileInputChange}
+                style={{ display: 'none' }}
+              />
+              <button 
+                className="import-btn" 
+                onClick={() => document.getElementById('file-input')?.click()}
+                aria-label="Import markdown file"
+              >
+                📁 Import
+              </button>
+              <button 
+                className="export-btn" 
+                onClick={onExport}
+                aria-label="Export to markdown file"
+              >
+                💾 Export
+              </button>
+            </div>
+            
             <button 
               className="add-task-btn" 
               onClick={handleCreateTask}
               aria-label="Add new task"
-  const handleFileInputChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file && file.type === 'text/markdown') {
-      onFileImport(file);
-    } else if (file) {
-      alert('Please select a valid Markdown (.md) file.');
-    }
-    // Reset input value to allow re-importing the same file
-    event.target.value = '';
-  }, [onFileImport]);
-
-  const handleDragOver = useCallback((event: React.DragEvent) => {
-    event.preventDefault();
-    setIsDragOver(true);
-  }, []);
-
-  const handleDragLeave = useCallback((event: React.DragEvent) => {
-    event.preventDefault();
-    setIsDragOver(false);
-  }, []);
-
-  const handleDrop = useCallback((event: React.DragEvent) => {
-    event.preventDefault();
-    setIsDragOver(false);
-    
-    const file = event.dataTransfer.files[0];
-    if (file && file.type === 'text/markdown') {
-      onFileImport(file);
-    } else if (file) {
-      alert('Please drop a valid Markdown (.md) file.');
-    }
-  }, [onFileImport]);
-
-  return (
-    <div 
-      className={`board ${isDragOver ? 'drag-over' : ''}`}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
-    >
-      <div className="board-header">
-        <h1>Taskdown Board</h1>
-        <div className="board-controls">
-          <div className="view-selector">
-            <label htmlFor="column-type-select">Group by:</label>
-            <select 
-              id="column-type-select"
-              value={columnType} 
-              onChange={(e) => setColumnType(e.target.value as ColumnType)}
-              aria-label="Select column grouping method"
             >
               + Add Task
             </button>
           </div>
-
-          <div className="file-controls">
-            <input
-              type="file"
-              id="file-input"
-              accept=".md,text/markdown"
-              onChange={handleFileInputChange}
-              style={{ display: 'none' }}
-            />
-            <button 
-              className="import-btn" 
-              onClick={() => document.getElementById('file-input')?.click()}
-              aria-label="Import markdown file"
-            >
-              📁 Import
-            </button>
-            <button 
-              className="export-btn" 
-              onClick={onExport}
-              aria-label="Export to markdown file"
-            >
-              💾 Export
-            </button>
-          </div>
-          <button 
-            className="add-task-btn" 
-            onClick={handleCreateTask}
-            aria-label="Add new task"
-          >
-            + Add Task
-          </button>
         </div>
 
         <div className="board-columns">
+          {isDragOver && (
+            <div className="drag-overlay">
+              <div className="drag-message">
+                <span>📁</span>
+                <p>Drop your Markdown file here to import</p>
+              </div>
+            </div>
+          )}
           {Object.entries(columns).map(([columnName, columnTasks]) => (
             <DroppableColumn
               key={columnName}
@@ -364,44 +355,6 @@ const Board: React.FC<BoardProps> = ({ tasks, onTaskUpdate, onTaskCreate, onFile
             />
           ))}
         </div>
-      <div className="board-columns">
-        {isDragOver && (
-          <div className="drag-overlay">
-            <div className="drag-message">
-              <span>📁</span>
-              <p>Drop your Markdown file here to import</p>
-            </div>
-          </div>
-        )}
-        {Object.entries(columns).map(([columnName, columnTasks]) => (
-          <div key={columnName} className="column" role="region" aria-label={`${columnName} tasks`}>
-            <div 
-              className="column-header"
-              style={{ borderTopColor: getColumnColor(columnName) }}
-            >
-              <h3>{columnName}</h3>
-              <span className="task-count" aria-label={`${columnTasks.length} tasks`}>
-                {columnTasks.length}
-              </span>
-            </div>
-            <div className="column-content" role="list">
-              {columnTasks.map(task => (
-                <div key={task.id} role="listitem">
-                  <Card 
-                    task={task} 
-                    onEdit={handleEditTask}
-                  />
-                </div>
-              ))}
-              {columnTasks.length === 0 && (
-                <div className="empty-column" role="status" aria-live="polite">
-                  No tasks in this column
-                </div>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
 
         <DragOverlay>
           {activeTask ? (

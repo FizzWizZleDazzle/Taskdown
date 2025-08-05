@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Task } from './types';
 import { sampleTasks } from './sampleData';
+import { STORAGE_KEYS } from './constants';
+import { useLocalStorage } from './hooks/useLocalStorage';
 import { MarkdownParser } from './parser';
 import { MarkdownSerializer } from './serializer';
 import { tasksToBoard, boardToTasks } from './converters';
@@ -8,18 +10,28 @@ import Board from './components/Board';
 import './App.css';
 
 const App: React.FC = () => {
-  const [tasks, setTasks] = useState<Task[]>(sampleTasks);
+  // Use localStorage hook for persistent task storage
+  // Initialize with sample data if no saved data exists
+  const [tasks, setTasks] = useLocalStorage<Task[]>(STORAGE_KEYS.BOARD_TASKS, sampleTasks);
+  
+  // State for board-level editing state
+  const [editingState, setEditingState] = useState({
+    isModalOpen: false,
+    selectedTaskId: null as string | null,
+    isCreating: false
+  });
 
   const generateId = () => {
     return `TASK-${crypto.randomUUID()}`;
   };
 
   const handleTaskUpdate = (updatedTask: Task) => {
-    setTasks(prevTasks =>
-      prevTasks.map(task =>
-        task.id === updatedTask.id ? updatedTask : task
-      )
-    );
+    setTasks(prevTasks => {
+      const updatedTasks = prevTasks.map(task =>
+        task.id === updatedTask.id ? { ...updatedTask, updatedAt: new Date() } : task
+      );
+      return updatedTasks;
+    });
   };
 
   const handleTaskCreate = (taskData: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => {
@@ -31,6 +43,15 @@ const App: React.FC = () => {
     };
     setTasks(prevTasks => [...prevTasks, newTask]);
   };
+
+
+  // Auto-save indicator (optional - could be used for UI feedback)
+  const [lastSaved, setLastSaved] = useState<Date>(new Date());
+  
+  // Update last saved timestamp when tasks change
+  useEffect(() => {
+    setLastSaved(new Date());
+  }, [tasks]);
 
   const handleFileImport = (file: File) => {
     const reader = new FileReader();
@@ -77,9 +98,23 @@ const App: React.FC = () => {
         tasks={tasks}
         onTaskUpdate={handleTaskUpdate}
         onTaskCreate={handleTaskCreate}
+        editingState={editingState}
+        onEditingStateChange={setEditingState}
         onFileImport={handleFileImport}
         onExport={handleExport}
+
       />
+      {/* Optional: Auto-save indicator */}
+      <div className="auto-save-indicator" style={{ 
+        position: 'fixed', 
+        bottom: '10px', 
+        right: '10px', 
+        fontSize: '12px', 
+        color: '#666',
+        opacity: 0.7
+      }}>
+        Last saved: {lastSaved.toLocaleTimeString()}
+      </div>
     </div>
   );
 };

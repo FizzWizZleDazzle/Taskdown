@@ -5,19 +5,48 @@ import Card from './Card';
 import TaskModal from './TaskModal';
 import './Board.css';
 
+interface EditingState {
+  isModalOpen: boolean;
+  selectedTaskId: string | null;
+  isCreating: boolean;
+}
+
 interface BoardProps {
   tasks: Task[];
   onTaskUpdate: (task: Task) => void;
   onTaskCreate: (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  editingState?: EditingState;
+  onEditingStateChange?: (state: EditingState) => void;
   onFileImport: (file: File) => void;
   onExport: () => void;
 }
 
-const Board: React.FC<BoardProps> = ({ tasks, onTaskUpdate, onTaskCreate, onFileImport, onExport }) => {
+const Board: React.FC<BoardProps> = ({ 
+  tasks, 
+  onTaskUpdate, 
+  onTaskCreate,
+  editingState: externalEditingState,
+  onEditingStateChange,
+  onFileImport,
+  onExport
+}) => {
   const [columnType, setColumnType] = useState<ColumnType>(COLUMN_TYPES.STATUS);
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
+  
+  // Use external editing state if provided, otherwise use internal state
+  const [internalEditingState, setInternalEditingState] = useState({
+    isModalOpen: false,
+    selectedTaskId: null as string | null,
+    isCreating: false
+  });
+  
+  const editingState = externalEditingState || internalEditingState;
+  const setEditingState = onEditingStateChange || setInternalEditingState;
+  
+  // Get selected task from tasks array
+  const selectedTask = editingState.selectedTaskId 
+    ? tasks.find(task => task.id === editingState.selectedTaskId) || null
+    : null;
+
   const [isDragOver, setIsDragOver] = useState(false);
 
   const columns = useMemo(() => {
@@ -55,31 +84,37 @@ const Board: React.FC<BoardProps> = ({ tasks, onTaskUpdate, onTaskCreate, onFile
   }, [tasks, columnType]);
 
   const handleEditTask = useCallback((task: Task) => {
-    setSelectedTask(task);
-    setIsCreating(false);
-    setIsModalOpen(true);
-  }, []);
+    setEditingState({
+      isModalOpen: true,
+      selectedTaskId: task.id,
+      isCreating: false
+    });
+  }, [setEditingState]);
 
   const handleCreateTask = useCallback(() => {
-    setSelectedTask(null);
-    setIsCreating(true);
-    setIsModalOpen(true);
-  }, []);
+    setEditingState({
+      isModalOpen: true,
+      selectedTaskId: null,
+      isCreating: true
+    });
+  }, [setEditingState]);
 
   const handleModalClose = useCallback(() => {
-    setIsModalOpen(false);
-    setSelectedTask(null);
-    setIsCreating(false);
-  }, []);
+    setEditingState({
+      isModalOpen: false,
+      selectedTaskId: null,
+      isCreating: false
+    });
+  }, [setEditingState]);
 
   const handleTaskSave = useCallback((task: Task | Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => {
-    if (isCreating) {
+    if (editingState.isCreating) {
       onTaskCreate(task as Omit<Task, 'id' | 'createdAt' | 'updatedAt'>);
     } else {
       onTaskUpdate(task as Task);
     }
     handleModalClose();
-  }, [isCreating, onTaskCreate, onTaskUpdate, handleModalClose]);
+  }, [editingState.isCreating, onTaskCreate, onTaskUpdate, handleModalClose]);
 
   const getColumnColor = useCallback((columnName: string) => {
     if (columnType === COLUMN_TYPES.STATUS) {
@@ -216,13 +251,13 @@ const Board: React.FC<BoardProps> = ({ tasks, onTaskUpdate, onTaskCreate, onFile
         ))}
       </div>
 
-      {isModalOpen && (
+      {editingState.isModalOpen && (
         <TaskModal
           task={selectedTask}
-          isOpen={isModalOpen}
+          isOpen={editingState.isModalOpen}
           onClose={handleModalClose}
           onSave={handleTaskSave}
-          isCreating={isCreating}
+          isCreating={editingState.isCreating}
         />
       )}
     </div>

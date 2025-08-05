@@ -65,8 +65,10 @@ const TaskModal: React.FC<TaskModalProps> = ({
     setBlockInput('');
   }, [task, isOpen]);
 
-  const handleInputChange = (field: keyof typeof formData, value: string | number) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  type FormDataType = typeof formData;
+  
+  const handleInputChange = <K extends keyof FormDataType>(field: K, value: FormDataType[K] | string | number) => {
+    setFormData(prev => ({ ...prev, [field]: value as FormDataType[K] }));
   };
 
   const handleAddDependency = () => {

@@ -11,7 +11,7 @@ import {
   useDroppable,
   closestCenter,
 } from '@dnd-kit/core';
-import { Task, ColumnType, TaskStatus } from '../types';
+import { Task, ColumnType, TaskStatus, Workspace } from '../types';
 import { TASK_STATUSES, COLUMN_TYPES, COLORS } from '../constants';
 import { filterTasks, hasActiveSearchOrFilter } from '../filterUtils';
 import Card from './Card';
@@ -34,13 +34,14 @@ interface EditingState {
 
 interface BoardProps {
   tasks: Task[];
-  onTaskUpdate: (task: Task) => void;
-  onTaskCreate: (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  onTaskUpdate: (task: Task, originalId?: string) => void;
+  onTaskCreate: (task: Task | Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => void;
   onTaskDelete?: (taskId: string) => void;
   editingState?: EditingState;
   onEditingStateChange?: (state: EditingState) => void;
   onFileImport: (file: File) => void;
   onExport: () => void;
+  currentWorkspace?: Workspace;
 }
 
 interface DroppableColumnProps {
@@ -114,7 +115,8 @@ const Board: React.FC<BoardProps> = ({
   editingState: externalEditingState,
   onEditingStateChange,
   onFileImport,
-  onExport
+  onExport,
+  currentWorkspace
 }) => {
   const [columnType, setColumnType] = useState<ColumnType>(COLUMN_TYPES.STATUS);
   const [searchAndFilter, setSearchAndFilter] = useState<SearchAndFilterState>(defaultSearchAndFilterState);
@@ -223,11 +225,16 @@ const Board: React.FC<BoardProps> = ({
     });
   }, [setEditingState]);
 
-  const handleTaskSave = useCallback((task: Task | Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const handleTaskSave = useCallback((task: Task | Omit<Task, 'id' | 'createdAt' | 'updatedAt'>, originalId?: string) => {
     if (editingState.isCreating) {
       onTaskCreate(task as Omit<Task, 'id' | 'createdAt' | 'updatedAt'>);
     } else {
-      onTaskUpdate(task as Task);
+      // If originalId is provided, it means the ID was changed
+      if (originalId) {
+        onTaskUpdate(task as Task, originalId);
+      } else {
+        onTaskUpdate(task as Task);
+      }
     }
     handleModalClose();
   }, [editingState.isCreating, onTaskCreate, onTaskUpdate, handleModalClose]);
@@ -488,6 +495,9 @@ const Board: React.FC<BoardProps> = ({
             onClose={handleModalClose}
             onSave={handleTaskSave}
             isCreating={editingState.isCreating}
+            existingEpics={Array.from(new Set(tasks.map(t => t.epic).filter(Boolean)))}
+            existingTaskIds={tasks.map(t => t.id)}
+            currentWorkspace={currentWorkspace}
           />
         )}
 

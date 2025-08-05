@@ -245,6 +245,21 @@
   box-shadow: 0 1px 3px rgba(32, 178, 170, 0.1);
 }
 
+.form-group input.error,
+.form-group select.error,
+.form-group textarea.error {
+  border-color: #e53e3e;
+  background: #fff5f5;
+}
+
+.error-message {
+  color: #e53e3e;
+  font-size: 12px;
+  margin-top: 4px;
+  display: block;
+  font-weight: 500;
+}
+
 .tag button {
   background: none;
   border: none;

@@ -70,5 +70,17 @@ export const DEFAULT_FORM_DATA = {
 export const STORAGE_KEYS = {
   BOARD_TASKS: 'taskdown_board_tasks',
   BOARD_STATE: 'taskdown_board_state',
-  USER_PREFERENCES: 'taskdown_user_preferences'
+  USER_PREFERENCES: 'taskdown_user_preferences',
+  WORKSPACES: 'taskdown_workspaces',
+  CURRENT_WORKSPACE: 'taskdown_current_workspace',
+  WORKSPACE_TASKS: (workspaceId: string) => `taskdown_tasks_${workspaceId}`
 } as const;
+
+// Default workspace
+export const DEFAULT_WORKSPACE = {
+  id: 'DEFAULT',
+  name: 'Default Workspace',
+  description: 'Your default workspace',
+  createdAt: new Date(),
+  updatedAt: new Date()
+};

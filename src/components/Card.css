@@ -42,7 +42,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 8px;
 }
 
 .card-header-left {
@@ -123,6 +123,7 @@
 .card-badges {
   display: flex;
   gap: 8px;
+  margin-bottom: 16px;
 }
 
 .badge {

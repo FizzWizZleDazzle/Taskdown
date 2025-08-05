@@ -31,6 +31,14 @@ export interface Task {
 
 export type ColumnType = 'epic' | 'sprint' | 'status';
 
+export interface Workspace {
+  id: string;
+  name: string;
+  description?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 // Search and Filter types
 export interface SearchAndFilterState {
   searchText: string;

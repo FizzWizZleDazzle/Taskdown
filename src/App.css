@@ -1,6 +1,15 @@
 .app {
   min-height: 100vh;
   background: linear-gradient(135deg, #e6f7ff 0%, #b3e5fc 100%);
+  position: relative;
+  padding-top: 60px;
+}
+
+.app > .workspace-switcher {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 999;
 }
 
 * {

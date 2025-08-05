@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Task, TaskType, Priority, TaskStatus, ChecklistItem } from '../types';
+import { Task, TaskType, Priority, TaskStatus, ChecklistItem, Workspace } from '../types';
 import { TASK_TYPES, PRIORITIES, TASK_STATUSES, DEFAULT_FORM_DATA } from '../constants';
 import Checklist from './Checklist';
 import './TaskModal.css';
@@ -8,8 +8,11 @@ interface TaskModalProps {
   task: Task | null;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (task: Task | Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  onSave: (task: Task | Omit<Task, 'id' | 'createdAt' | 'updatedAt'>, originalId?: string) => void;
   isCreating: boolean;
+  existingEpics?: string[];
+  existingTaskIds?: string[];
+  currentWorkspace?: Workspace;
 }
 
 const TaskModal: React.FC<TaskModalProps> = ({ 
@@ -17,9 +20,13 @@ const TaskModal: React.FC<TaskModalProps> = ({
   isOpen, 
   onClose, 
   onSave, 
-  isCreating 
+  isCreating,
+  existingEpics = [],
+  existingTaskIds = [],
+  currentWorkspace
 }) => {
   const [formData, setFormData] = useState({
+    id: '',
     title: '',
     type: TASK_TYPES.STORY as TaskType,
     priority: PRIORITIES.MEDIUM as Priority,
@@ -39,10 +46,12 @@ const TaskModal: React.FC<TaskModalProps> = ({
   const [technicalTasks, setTechnicalTasks] = useState<ChecklistItem[]>([]);
   const [dependencyInput, setDependencyInput] = useState('');
   const [blockInput, setBlockInput] = useState('');
+  const [idError, setIdError] = useState('');
 
   useEffect(() => {
     if (task) {
       setFormData({
+        id: task.id,
         title: task.title,
         type: task.type,
         priority: task.priority,
@@ -60,18 +69,40 @@ const TaskModal: React.FC<TaskModalProps> = ({
       setAcceptanceCriteria([...task.acceptanceCriteria]);
       setTechnicalTasks([...task.technicalTasks]);
     } else {
-      // Reset form for new task
-      setFormData({ ...DEFAULT_FORM_DATA });
+      // Reset form for new task with workspace-based ID
+      const workspaceId = currentWorkspace?.id || 'DEFAULT';
+      const workspaceTasks = existingTaskIds.filter(id => id.startsWith(`${workspaceId}-`));
+      const numbers = workspaceTasks.map(id => {
+        const match = id.match(new RegExp(`^${workspaceId}-(\\d+)$`));
+        return match ? parseInt(match[1], 10) : 0;
+      });
+      const maxNumber = numbers.length > 0 ? Math.max(...numbers) : 0;
+      const nextNumber = (maxNumber + 1).toString().padStart(3, '0');
+      const newId = `${workspaceId}-${nextNumber}`;
+      
+      setFormData({ ...DEFAULT_FORM_DATA, id: newId });
       setAcceptanceCriteria([]);
       setTechnicalTasks([]);
     }
     setDependencyInput('');
     setBlockInput('');
-  }, [task, isOpen]);
+    setIdError('');
+  }, [task, isOpen, currentWorkspace, existingTaskIds]);
 
   type FormDataType = typeof formData;
   
   const handleInputChange = <K extends keyof FormDataType>(field: K, value: FormDataType[K] | string | number) => {
+    if (field === 'id') {
+      const newId = value as string;
+      // Check if ID already exists (only for new tasks or if changing existing ID)
+      if (isCreating && existingTaskIds.includes(newId)) {
+        setIdError('This ID already exists. Please choose a different one.');
+      } else if (!isCreating && task?.id !== newId && existingTaskIds.includes(newId)) {
+        setIdError('This ID already exists. Please choose a different one.');
+      } else {
+        setIdError('');
+      }
+    }
     setFormData(prev => ({ ...prev, [field]: value as FormDataType[K] }));
   };
 
@@ -112,19 +143,31 @@ const TaskModal: React.FC<TaskModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Don't submit if there's an ID error
+    if (idError) {
+      return;
+    }
+    
     const taskData = {
       ...formData,
       acceptanceCriteria,
       technicalTasks,
       ...(task && { 
-        id: task.id, 
         createdAt: task.createdAt, 
         updatedAt: new Date() 
       }),
-      ...(isCreating && { updatedAt: new Date() })
+      ...(isCreating && { 
+        createdAt: new Date(),
+        updatedAt: new Date() 
+      })
     };
 
-    onSave(taskData);
+    // Pass original ID if we're editing and the ID has changed
+    if (!isCreating && task && task.id !== formData.id) {
+      onSave(taskData, task.id);
+    } else {
+      onSave(taskData);
+    }
   };
 
   if (!isOpen) return null;
@@ -156,6 +199,19 @@ const TaskModal: React.FC<TaskModalProps> = ({
 
         <form onSubmit={handleSubmit} className="task-form">
           <div className="form-grid">
+            <div className="form-group">
+              <label htmlFor="taskId">Task ID *</label>
+              <input
+                id="taskId"
+                type="text"
+                value={formData.id}
+                onChange={(e) => handleInputChange('id', e.target.value)}
+                required
+                className={idError ? 'error' : ''}
+              />
+              {idError && <span className="error-message">{idError}</span>}
+            </div>
+
             <div className="form-group">
               <label htmlFor="title">Title *</label>
               <input
@@ -240,7 +296,13 @@ const TaskModal: React.FC<TaskModalProps> = ({
                 value={formData.epic}
                 onChange={(e) => handleInputChange('epic', e.target.value)}
                 placeholder="e.g., Launcher Core Functionality"
+                list="epic-options"
               />
+              <datalist id="epic-options">
+                {existingEpics.map(epic => (
+                  <option key={epic} value={epic} />
+                ))}
+              </datalist>
             </div>
 
             <div className="form-group">

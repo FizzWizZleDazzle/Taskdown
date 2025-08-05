@@ -86,20 +86,6 @@ const Card: React.FC<CardProps> = ({ task, onEdit, onToggleFavorite, onDelete, i
             <div className="card-id">{task.id}</div>
           </div>
           <div className="card-header-right">
-            <div className="card-badges">
-              <span 
-                className="badge type-badge" 
-                style={{ backgroundColor: getTypeColor(task.type) }}
-              >
-                {task.type}
-              </span>
-              <span 
-                className="badge priority-badge" 
-                style={{ backgroundColor: getPriorityColor(task.priority) }}
-              >
-                {task.priority}
-              </span>
-            </div>
             <div className="card-actions">
               {onToggleFavorite && (
                 <button
@@ -129,6 +115,20 @@ const Card: React.FC<CardProps> = ({ task, onEdit, onToggleFavorite, onDelete, i
               )}
             </div>
           </div>
+        </div>
+        <div className="card-badges">
+          <span 
+            className="badge type-badge" 
+            style={{ backgroundColor: getTypeColor(task.type) }}
+          >
+            {task.type}
+          </span>
+          <span 
+            className="badge priority-badge" 
+            style={{ backgroundColor: getPriorityColor(task.priority) }}
+          >
+            {task.priority}
+          </span>
         </div>
       </div>
       

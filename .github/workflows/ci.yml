@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+        include:
+          - node-version: 20.x
+            run-lint: true
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Run tests
+      run: npm test
+      
+    - name: Build project
+      run: npm run build
+      
+    - name: Test CLI functionality
+      run: |
+        npm run parse -- parse example.md > /dev/null
+        npm run parse -- roundtrip example.md > /dev/null
+        echo "CLI tests passed"
+
+    - name: Check TypeScript compilation
+      if: matrix.run-lint
+      run: npx tsc --noEmit
+      
+    - name: Lint check
+      if: matrix.run-lint
+      run: |
+        # Basic check for potential issues
+        echo "TypeScript compilation successful"

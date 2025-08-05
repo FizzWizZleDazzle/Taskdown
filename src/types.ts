@@ -23,6 +23,8 @@ export interface Task {
   dependencies: string[];
   blocks: string[];
   assignee?: string;
+  isFavorite?: boolean;
+  thumbnail?: string;
   createdAt: Date;
   updatedAt: Date;
 }

@@ -46,7 +46,7 @@ npm install
 npm start
 
 # Build the application
-npm build
+npm run build
 
 # Test the parser
 npm test

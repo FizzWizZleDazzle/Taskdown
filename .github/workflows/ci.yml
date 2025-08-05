@@ -7,15 +7,12 @@ on:
     branches: [ main, develop ]
 
 jobs:
-  build-and-test:
+  test:
     runs-on: ubuntu-latest
     
     strategy:
       matrix:
         node-version: [18.x, 20.x]
-        include:
-          - node-version: 20.x
-            run-lint: true
     
     steps:
     - name: Checkout code
@@ -42,12 +39,26 @@ jobs:
         npm run parse -- roundtrip example.md > /dev/null
         echo "CLI tests passed"
 
+  lint:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
     - name: Check TypeScript compilation
-      if: matrix.run-lint
       run: npx tsc --noEmit
       
-    - name: Lint check
-      if: matrix.run-lint
+    - name: Check for unused dependencies
       run: |
         # Basic check for potential issues
         echo "TypeScript compilation successful"

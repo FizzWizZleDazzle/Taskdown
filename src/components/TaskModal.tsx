@@ -30,7 +30,9 @@ const TaskModal: React.FC<TaskModalProps> = ({
     description: '',
     assignee: '',
     dependencies: [] as string[],
-    blocks: [] as string[]
+    blocks: [] as string[],
+    isFavorite: false,
+    thumbnail: ''
   });
 
   const [acceptanceCriteria, setAcceptanceCriteria] = useState<ChecklistItem[]>([]);
@@ -51,7 +53,9 @@ const TaskModal: React.FC<TaskModalProps> = ({
         description: task.description,
         assignee: task.assignee || '',
         dependencies: [...task.dependencies],
-        blocks: [...task.blocks]
+        blocks: [...task.blocks],
+        isFavorite: task.isFavorite || false,
+        thumbnail: task.thumbnail || ''
       });
       setAcceptanceCriteria([...task.acceptanceCriteria]);
       setTechnicalTasks([...task.technicalTasks]);
@@ -248,6 +252,29 @@ const TaskModal: React.FC<TaskModalProps> = ({
                 onChange={(e) => handleInputChange('assignee', e.target.value)}
                 placeholder="e.g., john.doe@example.com"
               />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="thumbnail">Thumbnail URL</label>
+              <input
+                id="thumbnail"
+                type="url"
+                value={formData.thumbnail}
+                onChange={(e) => handleInputChange('thumbnail', e.target.value)}
+                placeholder="e.g., https://example.com/image.png or data:image/..."
+              />
+            </div>
+
+            <div className="form-group checkbox-group">
+              <label htmlFor="isFavorite" className="checkbox-label">
+                <input
+                  id="isFavorite"
+                  type="checkbox"
+                  checked={formData.isFavorite}
+                  onChange={(e) => handleInputChange('isFavorite', e.target.checked)}
+                />
+                <span className="checkbox-text">Mark as favorite</span>
+              </label>
             </div>
           </div>
 

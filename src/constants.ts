@@ -61,7 +61,9 @@ export const DEFAULT_FORM_DATA = {
   description: '',
   assignee: '',
   dependencies: [] as string[],
-  blocks: [] as string[]
+  blocks: [] as string[],
+  isFavorite: false,
+  thumbnail: ''
 };
 
 // LocalStorage keys

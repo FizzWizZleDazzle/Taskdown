@@ -8,10 +8,12 @@ import './Card.css';
 interface CardProps {
   task: Task;
   onEdit?: (task: Task) => void;
+  onToggleFavorite?: (taskId: string) => void;
+  onDelete?: (taskId: string) => void;
   isDragging?: boolean;
 }
 
-const Card: React.FC<CardProps> = ({ task, onEdit, isDragging = false }) => {
+const Card: React.FC<CardProps> = ({ task, onEdit, onToggleFavorite, onDelete, isDragging = false }) => {
   const {
     attributes,
     listeners,
@@ -75,20 +77,57 @@ const Card: React.FC<CardProps> = ({ task, onEdit, isDragging = false }) => {
       {/* Drag handle - top section */}
       <div {...listeners} className="card-drag-handle">
         <div className="card-header">
-          <div className="card-id">{task.id}</div>
-          <div className="card-badges">
-            <span 
-              className="badge type-badge" 
-              style={{ backgroundColor: getTypeColor(task.type) }}
-            >
-              {task.type}
-            </span>
-            <span 
-              className="badge priority-badge" 
-              style={{ backgroundColor: getPriorityColor(task.priority) }}
-            >
-              {task.priority}
-            </span>
+          <div className="card-header-left">
+            {task.thumbnail && (
+              <div className="card-thumbnail">
+                <img src={task.thumbnail} alt={`${task.title} thumbnail`} />
+              </div>
+            )}
+            <div className="card-id">{task.id}</div>
+          </div>
+          <div className="card-header-right">
+            <div className="card-badges">
+              <span 
+                className="badge type-badge" 
+                style={{ backgroundColor: getTypeColor(task.type) }}
+              >
+                {task.type}
+              </span>
+              <span 
+                className="badge priority-badge" 
+                style={{ backgroundColor: getPriorityColor(task.priority) }}
+              >
+                {task.priority}
+              </span>
+            </div>
+            <div className="card-actions">
+              {onToggleFavorite && (
+                <button
+                  className={`favorite-btn ${task.isFavorite ? 'favorited' : ''}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleFavorite(task.id);
+                  }}
+                  aria-label={task.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+                  title={task.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+                >
+                  {task.isFavorite ? '★' : '☆'}
+                </button>
+              )}
+              {onDelete && (
+                <button
+                  className="delete-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(task.id);
+                  }}
+                  aria-label="Delete task"
+                  title="Delete task"
+                >
+                  🗑️
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>

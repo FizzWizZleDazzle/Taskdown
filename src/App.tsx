@@ -44,6 +44,10 @@ const App: React.FC = () => {
     setTasks(prevTasks => [...prevTasks, newTask]);
   };
 
+  const handleTaskDelete = (taskId: string) => {
+    setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
+  };
+
 
   // Auto-save indicator (optional - could be used for UI feedback)
   const [lastSaved, setLastSaved] = useState<Date>(new Date());
@@ -98,6 +102,7 @@ const App: React.FC = () => {
         tasks={tasks}
         onTaskUpdate={handleTaskUpdate}
         onTaskCreate={handleTaskCreate}
+        onTaskDelete={handleTaskDelete}
         editingState={editingState}
         onEditingStateChange={setEditingState}
         onFileImport={handleFileImport}

@@ -45,6 +45,70 @@
   margin-bottom: 16px;
 }
 
+.card-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.card-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.card-thumbnail {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  flex-shrink: 0;
+}
+
+.card-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.card-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.favorite-btn,
+.delete-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1;
+  transition: all 0.2s ease;
+  color: #718096;
+}
+
+.favorite-btn:hover,
+.delete-btn:hover {
+  background: #f7fafc;
+  color: #2d3748;
+}
+
+.favorite-btn.favorited {
+  color: #fbbf24;
+}
+
+.favorite-btn:hover {
+  transform: scale(1.1);
+}
+
+.delete-btn:hover {
+  color: #e53e3e;
+  background: #fed7d7;
+}
+
 .card-id {
   font-weight: 700;
   color: #4a5568;

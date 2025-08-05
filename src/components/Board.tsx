@@ -17,6 +17,7 @@ import { filterTasks, hasActiveSearchOrFilter } from '../filterUtils';
 import Card from './Card';
 import TaskModal from './TaskModal';
 import SearchAndFilter from './SearchAndFilter';
+import ConfirmDialog from './ConfirmDialog';
 import { SearchAndFilterState, defaultSearchAndFilterState } from '../types';
 import './Board.css';
 
@@ -35,6 +36,7 @@ interface BoardProps {
   tasks: Task[];
   onTaskUpdate: (task: Task) => void;
   onTaskCreate: (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  onTaskDelete?: (taskId: string) => void;
   editingState?: EditingState;
   onEditingStateChange?: (state: EditingState) => void;
   onFileImport: (file: File) => void;
@@ -46,6 +48,8 @@ interface DroppableColumnProps {
   columnTasks: Task[];
   getColumnColor: (columnName: string) => string;
   handleEditTask: (task: Task) => void;
+  handleToggleFavorite: (taskId: string) => void;
+  handleDeleteTask: (taskId: string) => void;
   activeTask: Task | null;
 }
 
@@ -54,6 +58,8 @@ const DroppableColumn: React.FC<DroppableColumnProps> = ({
   columnTasks,
   getColumnColor,
   handleEditTask,
+  handleToggleFavorite,
+  handleDeleteTask,
   activeTask,
 }) => {
   const { setNodeRef, isOver } = useDroppable({
@@ -83,6 +89,8 @@ const DroppableColumn: React.FC<DroppableColumnProps> = ({
             <Card
               task={task}
               onEdit={handleEditTask}
+              onToggleFavorite={handleToggleFavorite}
+              onDelete={handleDeleteTask}
               isDragging={activeTask?.id === task.id}
             />
           </div>
@@ -102,6 +110,7 @@ const Board: React.FC<BoardProps> = ({
   tasks,
   onTaskUpdate,
   onTaskCreate,
+  onTaskDelete,
   editingState: externalEditingState,
   onEditingStateChange,
   onFileImport,
@@ -113,6 +122,17 @@ const Board: React.FC<BoardProps> = ({
   
   // Add state for drag & drop
   const [activeTask, setActiveTask] = useState<Task | null>(null);
+  
+  // Add state for delete confirmation
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{
+    isOpen: boolean;
+    taskId: string | null;
+    taskTitle: string;
+  }>({
+    isOpen: false,
+    taskId: null,
+    taskTitle: ''
+  });
   
   // Use external editing state if provided, otherwise use internal state
   const [internalEditingState, setInternalEditingState] = useState({
@@ -211,6 +231,44 @@ const Board: React.FC<BoardProps> = ({
     }
     handleModalClose();
   }, [editingState.isCreating, onTaskCreate, onTaskUpdate, handleModalClose]);
+
+  const handleToggleFavorite = useCallback((taskId: string) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (task) {
+      const updatedTask = { ...task, isFavorite: !task.isFavorite, updatedAt: new Date() };
+      onTaskUpdate(updatedTask);
+    }
+  }, [tasks, onTaskUpdate]);
+
+  const handleDeleteTask = useCallback((taskId: string) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (task) {
+      setDeleteConfirmation({
+        isOpen: true,
+        taskId: taskId,
+        taskTitle: task.title
+      });
+    }
+  }, [tasks]);
+
+  const handleConfirmDelete = useCallback(() => {
+    if (deleteConfirmation.taskId && onTaskDelete) {
+      onTaskDelete(deleteConfirmation.taskId);
+    }
+    setDeleteConfirmation({
+      isOpen: false,
+      taskId: null,
+      taskTitle: ''
+    });
+  }, [deleteConfirmation.taskId, onTaskDelete]);
+
+  const handleCancelDelete = useCallback(() => {
+    setDeleteConfirmation({
+      isOpen: false,
+      taskId: null,
+      taskTitle: ''
+    });
+  }, []);
 
   const getColumnColor = useCallback((columnName: string) => {
     if (columnType === COLUMN_TYPES.STATUS) {
@@ -406,6 +464,8 @@ const Board: React.FC<BoardProps> = ({
               columnTasks={columnTasks}
               getColumnColor={getColumnColor}
               handleEditTask={handleEditTask}
+              handleToggleFavorite={handleToggleFavorite}
+              handleDeleteTask={handleDeleteTask}
               activeTask={activeTask}
             />
           ))}
@@ -430,6 +490,17 @@ const Board: React.FC<BoardProps> = ({
             isCreating={editingState.isCreating}
           />
         )}
+
+        <ConfirmDialog
+          isOpen={deleteConfirmation.isOpen}
+          title="Delete Task"
+          message={`Are you sure you want to delete "${deleteConfirmation.taskTitle}"? This action cannot be undone.`}
+          confirmText="Delete"
+          cancelText="Cancel"
+          variant="danger"
+          onConfirm={handleConfirmDelete}
+          onCancel={handleCancelDelete}
+        />
       </div>
     </DndContext>
   );

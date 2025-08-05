@@ -105,6 +105,31 @@
   grid-column: 1 / -1;
 }
 
+.form-group.checkbox-group {
+  margin: 16px 0;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-weight: 500;
+  color: #4a5568;
+  gap: 12px;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: #3182ce;
+  cursor: pointer;
+}
+
+.checkbox-text {
+  font-size: 14px;
+}
+
 .form-group label {
   margin-bottom: 8px;
   font-weight: 600;

@@ -11,11 +11,6 @@ import {
   useDroppable,
   closestCenter,
 } from '@dnd-kit/core';
-import {
-  arrayMove,
-  SortableContext,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
 import { Task, ColumnType, TaskStatus } from '../types';
 import { TASK_STATUSES, COLUMN_TYPES, COLORS } from '../constants';
 import Card from './Card';
@@ -51,6 +46,8 @@ const DroppableColumn: React.FC<DroppableColumnProps> = ({
     id: columnName,
   });
 
+  console.log('DroppableColumn rendered:', columnName, 'isOver:', isOver);
+
   return (
     <div className="column" role="region" aria-label={`${columnName} tasks`}>
       <div 
@@ -62,33 +59,28 @@ const DroppableColumn: React.FC<DroppableColumnProps> = ({
           {columnTasks.length}
         </span>
       </div>
-      <SortableContext 
-        items={getTaskIds(columnTasks)} 
-        strategy={verticalListSortingStrategy}
+      <div 
+        ref={setNodeRef}
+        className={`column-content ${isOver ? 'column-content--over' : ''}`}
+        role="list"
+        data-column-id={columnName}
+        style={{ minHeight: '200px' }} // Ensure droppable area even when empty
       >
-        <div 
-          ref={setNodeRef}
-          className={`column-content ${isOver ? 'column-content--over' : ''}`}
-          role="list"
-          data-column-id={columnName}
-          style={{ minHeight: '200px' }} // Ensure droppable area even when empty
-        >
-          {columnTasks.map(task => (
-            <div key={task.id} role="listitem">
-              <Card 
-                task={task} 
-                onEdit={handleEditTask}
-                isDragging={activeTask?.id === task.id}
-              />
-            </div>
-          ))}
-          {columnTasks.length === 0 && (
-            <div className="empty-column" role="status" aria-live="polite">
-              No tasks in this column
-            </div>
-          )}
-        </div>
-      </SortableContext>
+        {columnTasks.map(task => (
+          <div key={task.id} role="listitem">
+            <Card 
+              task={task} 
+              onEdit={handleEditTask}
+              isDragging={activeTask?.id === task.id}
+            />
+          </div>
+        ))}
+        {columnTasks.length === 0 && (
+          <div className="empty-column" role="status" aria-live="polite">
+            No tasks in this column
+          </div>
+        )}
+      </div>
     </div>
   );
 };
@@ -194,18 +186,28 @@ const Board: React.FC<BoardProps> = ({ tasks, onTaskUpdate, onTaskCreate, onFile
     const { active, over } = event;
     setActiveTask(null);
 
+    console.log('Drag end:', { activeId: active.id, overId: over?.id });
+
     if (!over || active.id === over.id) return;
 
     const activeTask = tasks.find(t => t.id === active.id);
     if (!activeTask) return;
 
+    console.log('Active task:', activeTask);
+    console.log('Column type:', columnType);
+    console.log('Over ID:', over.id);
+
     // Handle moving between columns (status change)
     if (columnType === COLUMN_TYPES.STATUS) {
       const overColumnId = over.id as string;
       
+      console.log('Task statuses:', Object.values(TASK_STATUSES));
+      console.log('Checking if overColumnId is a status:', overColumnId, Object.values(TASK_STATUSES).includes(overColumnId as TaskStatus));
+      
       // Check if we're dropping on a column (status)
       if (Object.values(TASK_STATUSES).includes(overColumnId as TaskStatus)) {
         if (activeTask.status !== overColumnId) {
+          console.log('Updating task status from', activeTask.status, 'to', overColumnId);
           const updatedTask = { ...activeTask, status: overColumnId as TaskStatus, updatedAt: new Date() };
           onTaskUpdate(updatedTask);
         }
@@ -215,6 +217,7 @@ const Board: React.FC<BoardProps> = ({ tasks, onTaskUpdate, onTaskCreate, onFile
       // Handle reordering within the same column
       const overTask = tasks.find(t => t.id === over.id);
       if (overTask && activeTask.status === overTask.status) {
+        console.log('Reordering within same column');
         // Find tasks in the same column
         const columnTasks = tasks.filter(t => t.status === activeTask.status);
         const oldIndex = columnTasks.findIndex(t => t.id === active.id);

@@ -1,5 +1,5 @@
 import React from 'react';
-import { useSortable } from '@dnd-kit/sortable';
+import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { Task, ChecklistItem } from '../types';
 import { COLORS } from '../constants';
@@ -17,16 +17,14 @@ const Card: React.FC<CardProps> = ({ task, onEdit, isDragging = false }) => {
     listeners,
     setNodeRef,
     transform,
-    transition,
-    isDragging: isSortableDragging,
-  } = useSortable({
+    isDragging: isDragActive,
+  } = useDraggable({
     id: task.id,
   });
 
   const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging || isSortableDragging ? 0.5 : 1,
+    transform: CSS.Translate.toString(transform),
+    opacity: isDragging || isDragActive ? 0.5 : 1,
   };
 
   const getTypeColor = (type: string) => {
@@ -48,7 +46,7 @@ const Card: React.FC<CardProps> = ({ task, onEdit, isDragging = false }) => {
 
   const handleClick = (e: React.MouseEvent) => {
     // Only handle click if we're not dragging
-    if (!isSortableDragging && !isDragging) {
+    if (!isDragActive && !isDragging) {
       e.stopPropagation();
       onEdit(task);
     }

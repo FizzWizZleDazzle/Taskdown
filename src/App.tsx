@@ -8,9 +8,7 @@ const App: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>(sampleTasks);
 
   const generateId = () => {
-    const prefix = 'TASK';
-    const number = Math.floor(Math.random() * 900) + 100;
-    return `${prefix}-${number}`;
+    return `TASK-${crypto.randomUUID()}`;
   };
 
   const handleTaskUpdate = (updatedTask: Task) => {

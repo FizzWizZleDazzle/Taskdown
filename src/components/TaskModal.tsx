@@ -65,7 +65,7 @@ const TaskModal: React.FC<TaskModalProps> = ({
     setBlockInput('');
   }, [task, isOpen]);
 
-  const handleInputChange = (field: keyof typeof formData, value: string | number | TaskType | Priority | TaskStatus) => {
+  const handleInputChange = (field: keyof typeof formData, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 

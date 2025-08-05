@@ -1,6 +1,6 @@
 .app {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  background: linear-gradient(135deg, #e6f7ff 0%, #b3e5fc 100%);
 }
 
 * {
@@ -20,18 +20,18 @@ body {
 
 /* Focus styles for accessibility */
 *:focus {
-  outline: 2px solid #667eea;
+  outline: 2px solid #20b2aa;
   outline-offset: 2px;
 }
 
 /* Selection styles */
 ::selection {
-  background: #667eea;
+  background: #20b2aa;
   color: white;
 }
 
 ::-moz-selection {
-  background: #667eea;
+  background: #20b2aa;
   color: white;
 }
 

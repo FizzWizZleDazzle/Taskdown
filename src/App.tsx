@@ -49,12 +49,19 @@ const App: React.FC = () => {
   };
 
 
-  // Auto-save indicator (optional - could be used for UI feedback)
+  // Auto-save indicator with debounced updates for better UX
   const [lastSaved, setLastSaved] = useState<Date>(new Date());
+  const [isSaving, setIsSaving] = useState<boolean>(false);
   
-  // Update last saved timestamp when tasks change
+  // Debounced auto-save indicator to prevent too frequent updates
   useEffect(() => {
-    setLastSaved(new Date());
+    setIsSaving(true);
+    const saveTimer = setTimeout(() => {
+      setLastSaved(new Date());
+      setIsSaving(false);
+    }, 500); // Half second delay to show saving state
+
+    return () => clearTimeout(saveTimer);
   }, [tasks]);
 
   const handleFileImport = (file: File) => {
@@ -109,9 +116,18 @@ const App: React.FC = () => {
         onExport={handleExport}
 
       />
-      {/* Auto-save indicator */}
-      <div className="auto-save-indicator">
-        Last saved: {lastSaved.toLocaleTimeString()}
+      {/* Auto-save indicator with accessibility and UX improvements */}
+      <div 
+        className="auto-save-indicator"
+        role="status"
+        aria-live="polite"
+        aria-label={isSaving ? "Saving changes" : `Last saved at ${lastSaved.toLocaleTimeString()}`}
+      >
+        {isSaving ? (
+          <span>Saving...</span>
+        ) : (
+          <span>Last saved: {lastSaved.toLocaleTimeString()}</span>
+        )}
       </div>
     </div>
   );

@@ -66,11 +66,30 @@ html {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   z-index: 100;
   font-weight: 500;
-  transition: opacity 0.3s ease;
+  transition: opacity 0.3s ease, transform 0.2s ease;
 }
 
 .auto-save-indicator:hover {
   opacity: 1;
+}
+
+/* Saving state animation */
+.auto-save-indicator span {
+  display: inline-block;
+}
+
+/* Subtle pulse animation for saving state */
+.auto-save-indicator:has(span:first-child) {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 
 /* Responsive auto-save indicator */

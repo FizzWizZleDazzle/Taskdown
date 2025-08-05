@@ -4,6 +4,16 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+
+# OS files
+.DS_Store
+Thumbs.db
+
 # Production builds
 /dist
 /build
@@ -15,11 +25,22 @@ yarn-error.log*
 .env.test.local
 .env.production.local
 
+
 # IDE files
 .vscode/
 .idea/
 *.swp
 *.swo
+
+
+
+# Test coverage
+coverage/
+
+# Temporary files
+*.tmp
+*.temp
+/tmp/
 
 # OS files
 .DS_Store
@@ -70,3 +91,4 @@ jspm_packages/
 
 # Yarn Integrity file
 .yarn-integrity
+

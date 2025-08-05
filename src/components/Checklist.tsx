@@ -192,4 +192,4 @@ const ChecklistItemComponent: React.FC<ChecklistItemComponentProps> = ({
   );
 };
 
-export default Checklist;
+export default React.memo(Checklist);

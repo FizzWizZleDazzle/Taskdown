@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Task, TaskType, Priority, TaskStatus, ChecklistItem } from '../types';
+import { TASK_TYPES, PRIORITIES, TASK_STATUSES, DEFAULT_FORM_DATA } from '../constants';
 import Checklist from './Checklist';
 import './TaskModal.css';
 
@@ -20,9 +21,9 @@ const TaskModal: React.FC<TaskModalProps> = ({
 }) => {
   const [formData, setFormData] = useState({
     title: '',
-    type: 'Story' as TaskType,
-    priority: 'Medium' as Priority,
-    status: 'Todo' as TaskStatus,
+    type: TASK_TYPES.STORY as TaskType,
+    priority: PRIORITIES.MEDIUM as Priority,
+    status: TASK_STATUSES.TODO as TaskStatus,
     storyPoints: 0,
     sprint: '',
     epic: '',
@@ -56,19 +57,7 @@ const TaskModal: React.FC<TaskModalProps> = ({
       setTechnicalTasks([...task.technicalTasks]);
     } else {
       // Reset form for new task
-      setFormData({
-        title: '',
-        type: 'Story',
-        priority: 'Medium',
-        status: 'Todo',
-        storyPoints: 0,
-        sprint: '',
-        epic: '',
-        description: '',
-        assignee: '',
-        dependencies: [],
-        blocks: []
-      });
+      setFormData({ ...DEFAULT_FORM_DATA });
       setAcceptanceCriteria([]);
       setTechnicalTasks([]);
     }
@@ -76,7 +65,7 @@ const TaskModal: React.FC<TaskModalProps> = ({
     setBlockInput('');
   }, [task, isOpen]);
 
-  const handleInputChange = (field: string, value: any) => {
+  const handleInputChange = (field: keyof typeof formData, value: string | number | TaskType | Priority | TaskStatus) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -135,11 +124,28 @@ const TaskModal: React.FC<TaskModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+    <div 
+      className="modal-overlay" 
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-title"
+    >
+      <div 
+        className="modal-content" 
+        onClick={(e) => e.stopPropagation()}
+        role="document"
+      >
         <div className="modal-header">
-          <h2>{isCreating ? 'Create New Task' : 'Edit Task'}</h2>
-          <button className="close-btn" onClick={onClose}>×</button>
+          <h2 id="modal-title">{isCreating ? 'Create New Task' : 'Edit Task'}</h2>
+          <button 
+            className="close-btn" 
+            onClick={onClose}
+            aria-label="Close modal"
+            type="button"
+          >
+            ×
+          </button>
         </div>
 
         <form onSubmit={handleSubmit} className="task-form">
@@ -162,10 +168,10 @@ const TaskModal: React.FC<TaskModalProps> = ({
                 value={formData.type}
                 onChange={(e) => handleInputChange('type', e.target.value)}
               >
-                <option value="Epic">Epic</option>
-                <option value="Story">Story</option>
-                <option value="Task">Task</option>
-                <option value="Bug">Bug</option>
+                <option value={TASK_TYPES.EPIC}>Epic</option>
+                <option value={TASK_TYPES.STORY}>Story</option>
+                <option value={TASK_TYPES.TASK}>Task</option>
+                <option value={TASK_TYPES.BUG}>Bug</option>
               </select>
             </div>
 
@@ -176,10 +182,10 @@ const TaskModal: React.FC<TaskModalProps> = ({
                 value={formData.priority}
                 onChange={(e) => handleInputChange('priority', e.target.value)}
               >
-                <option value="Critical">Critical</option>
-                <option value="High">High</option>
-                <option value="Medium">Medium</option>
-                <option value="Low">Low</option>
+                <option value={PRIORITIES.CRITICAL}>Critical</option>
+                <option value={PRIORITIES.HIGH}>High</option>
+                <option value={PRIORITIES.MEDIUM}>Medium</option>
+                <option value={PRIORITIES.LOW}>Low</option>
               </select>
             </div>
 
@@ -190,10 +196,10 @@ const TaskModal: React.FC<TaskModalProps> = ({
                 value={formData.status}
                 onChange={(e) => handleInputChange('status', e.target.value)}
               >
-                <option value="Todo">Todo</option>
-                <option value="In Progress">In Progress</option>
-                <option value="In Review">In Review</option>
-                <option value="Done">Done</option>
+                <option value={TASK_STATUSES.TODO}>Todo</option>
+                <option value={TASK_STATUSES.IN_PROGRESS}>In Progress</option>
+                <option value={TASK_STATUSES.IN_REVIEW}>In Review</option>
+                <option value={TASK_STATUSES.DONE}>Done</option>
               </select>
             </div>
 

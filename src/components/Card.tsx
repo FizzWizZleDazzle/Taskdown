@@ -1,5 +1,6 @@
 import React from 'react';
 import { Task, ChecklistItem } from '../types';
+import { COLORS } from '../constants';
 import './Card.css';
 
 interface CardProps {
@@ -9,23 +10,11 @@ interface CardProps {
 
 const Card: React.FC<CardProps> = ({ task, onEdit }) => {
   const getTypeColor = (type: string) => {
-    switch (type) {
-      case 'Epic': return '#8B5CF6';
-      case 'Story': return '#06B6D4';
-      case 'Task': return '#10B981';
-      case 'Bug': return '#EF4444';
-      default: return '#6B7280';
-    }
+    return COLORS.TYPE[type as keyof typeof COLORS.TYPE] || COLORS.TYPE.DEFAULT;
   };
 
   const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'Critical': return '#DC2626';
-      case 'High': return '#EA580C';
-      case 'Medium': return '#D97706';
-      case 'Low': return '#65A30D';
-      default: return '#6B7280';
-    }
+    return COLORS.PRIORITY[priority as keyof typeof COLORS.PRIORITY] || COLORS.PRIORITY.DEFAULT;
   };
 
   const getCompletedCount = (items: ChecklistItem[]) => {
@@ -38,7 +27,20 @@ const Card: React.FC<CardProps> = ({ task, onEdit }) => {
   };
 
   return (
-    <div className="card" data-status={task.status} onClick={() => onEdit(task)}>
+    <div 
+      className="card" 
+      data-status={task.status} 
+      onClick={() => onEdit(task)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onEdit(task);
+        }
+      }}
+      tabIndex={0}
+      role="button"
+      aria-label={`Edit task ${task.id}: ${task.title}`}
+    >
       <div className="card-header">
         <div className="card-id">{task.id}</div>
         <div className="card-badges">
@@ -146,4 +148,4 @@ const Card: React.FC<CardProps> = ({ task, onEdit }) => {
   );
 };
 
-export default Card;
+export default React.memo(Card);

@@ -1,5 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Task, ColumnType } from '../types';
+import { TASK_STATUSES, COLUMN_TYPES, COLORS } from '../constants';
 import Card from './Card';
 import TaskModal from './TaskModal';
 import './Board.css';
@@ -11,21 +12,21 @@ interface BoardProps {
 }
 
 const Board: React.FC<BoardProps> = ({ tasks, onTaskUpdate, onTaskCreate }) => {
-  const [columnType, setColumnType] = useState<ColumnType>('status');
+  const [columnType, setColumnType] = useState<ColumnType>(COLUMN_TYPES.STATUS);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
 
   const columns = useMemo(() => {
     switch (columnType) {
-      case 'status':
+      case COLUMN_TYPES.STATUS:
         return {
-          'Todo': tasks.filter(task => task.status === 'Todo'),
-          'In Progress': tasks.filter(task => task.status === 'In Progress'),
-          'In Review': tasks.filter(task => task.status === 'In Review'),
-          'Done': tasks.filter(task => task.status === 'Done'),
+          [TASK_STATUSES.TODO]: tasks.filter(task => task.status === TASK_STATUSES.TODO),
+          [TASK_STATUSES.IN_PROGRESS]: tasks.filter(task => task.status === TASK_STATUSES.IN_PROGRESS),
+          [TASK_STATUSES.IN_REVIEW]: tasks.filter(task => task.status === TASK_STATUSES.IN_REVIEW),
+          [TASK_STATUSES.DONE]: tasks.filter(task => task.status === TASK_STATUSES.DONE),
         };
-      case 'epic':
+      case COLUMN_TYPES.EPIC:
         const epicGroups: Record<string, Task[]> = {};
         tasks.forEach(task => {
           const epic = task.epic || 'No Epic';
@@ -35,7 +36,7 @@ const Board: React.FC<BoardProps> = ({ tasks, onTaskUpdate, onTaskCreate }) => {
           epicGroups[epic].push(task);
         });
         return epicGroups;
-      case 'sprint':
+      case COLUMN_TYPES.SPRINT:
         const sprintGroups: Record<string, Task[]> = {};
         tasks.forEach(task => {
           const sprint = task.sprint || 'No Sprint';
@@ -50,45 +51,39 @@ const Board: React.FC<BoardProps> = ({ tasks, onTaskUpdate, onTaskCreate }) => {
     }
   }, [tasks, columnType]);
 
-  const handleEditTask = (task: Task) => {
+  const handleEditTask = useCallback((task: Task) => {
     setSelectedTask(task);
     setIsCreating(false);
     setIsModalOpen(true);
-  };
+  }, []);
 
-  const handleCreateTask = () => {
+  const handleCreateTask = useCallback(() => {
     setSelectedTask(null);
     setIsCreating(true);
     setIsModalOpen(true);
-  };
+  }, []);
 
-  const handleModalClose = () => {
+  const handleModalClose = useCallback(() => {
     setIsModalOpen(false);
     setSelectedTask(null);
     setIsCreating(false);
-  };
+  }, []);
 
-  const handleTaskSave = (task: Task | Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const handleTaskSave = useCallback((task: Task | Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => {
     if (isCreating) {
       onTaskCreate(task as Omit<Task, 'id' | 'createdAt' | 'updatedAt'>);
     } else {
       onTaskUpdate(task as Task);
     }
     handleModalClose();
-  };
+  }, [isCreating, onTaskCreate, onTaskUpdate, handleModalClose]);
 
-  const getColumnColor = (columnName: string) => {
-    if (columnType === 'status') {
-      switch (columnName) {
-        case 'Todo': return '#6b7280';
-        case 'In Progress': return '#f59e0b';
-        case 'In Review': return '#8b5cf6';
-        case 'Done': return '#10b981';
-        default: return '#6b7280';
-      }
+  const getColumnColor = useCallback((columnName: string) => {
+    if (columnType === COLUMN_TYPES.STATUS) {
+      return COLORS.STATUS[columnName as keyof typeof COLORS.STATUS] || COLORS.STATUS.DEFAULT;
     }
-    return '#6b7280';
-  };
+    return COLORS.STATUS.DEFAULT;
+  }, [columnType]);
 
   return (
     <div className="board">
@@ -96,17 +91,23 @@ const Board: React.FC<BoardProps> = ({ tasks, onTaskUpdate, onTaskCreate }) => {
         <h1>Taskdown Board</h1>
         <div className="board-controls">
           <div className="view-selector">
-            <label>Group by:</label>
+            <label htmlFor="column-type-select">Group by:</label>
             <select 
+              id="column-type-select"
               value={columnType} 
               onChange={(e) => setColumnType(e.target.value as ColumnType)}
+              aria-label="Select column grouping method"
             >
-              <option value="status">Status</option>
-              <option value="epic">Epic</option>
-              <option value="sprint">Sprint</option>
+              <option value={COLUMN_TYPES.STATUS}>Status</option>
+              <option value={COLUMN_TYPES.EPIC}>Epic</option>
+              <option value={COLUMN_TYPES.SPRINT}>Sprint</option>
             </select>
           </div>
-          <button className="add-task-btn" onClick={handleCreateTask}>
+          <button 
+            className="add-task-btn" 
+            onClick={handleCreateTask}
+            aria-label="Add new task"
+          >
             + Add Task
           </button>
         </div>
@@ -114,24 +115,27 @@ const Board: React.FC<BoardProps> = ({ tasks, onTaskUpdate, onTaskCreate }) => {
 
       <div className="board-columns">
         {Object.entries(columns).map(([columnName, columnTasks]) => (
-          <div key={columnName} className="column">
+          <div key={columnName} className="column" role="region" aria-label={`${columnName} tasks`}>
             <div 
               className="column-header"
               style={{ borderTopColor: getColumnColor(columnName) }}
             >
               <h3>{columnName}</h3>
-              <span className="task-count">{columnTasks.length}</span>
+              <span className="task-count" aria-label={`${columnTasks.length} tasks`}>
+                {columnTasks.length}
+              </span>
             </div>
-            <div className="column-content">
+            <div className="column-content" role="list">
               {columnTasks.map(task => (
-                <Card 
-                  key={task.id} 
-                  task={task} 
-                  onEdit={handleEditTask}
-                />
+                <div key={task.id} role="listitem">
+                  <Card 
+                    task={task} 
+                    onEdit={handleEditTask}
+                  />
+                </div>
               ))}
               {columnTasks.length === 0 && (
-                <div className="empty-column">
+                <div className="empty-column" role="status" aria-live="polite">
                   No tasks in this column
                 </div>
               )}

@@ -2,7 +2,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { parseMarkdown, serializeToMarkdown } from './index';
+import { parseMarkdown, serializeToMarkdown } from './parser-utils';
 
 function showHelp() {
   console.log(`

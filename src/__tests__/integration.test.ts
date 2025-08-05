@@ -1,6 +1,6 @@
 import { MarkdownParser } from '../parser';
 import { MarkdownSerializer } from '../serializer';
-import { parseMarkdown, serializeToMarkdown } from '../index';
+import { parseMarkdown, serializeToMarkdown } from '../parser-utils';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -9,7 +9,7 @@ describe('Integration Tests', () => {
 
   beforeAll(() => {
     // Read the example.md file
-    const examplePath = path.join(__dirname, '../../../../example.md');
+    const examplePath = path.join(__dirname, '../../example.md');
     exampleMarkdown = fs.readFileSync(examplePath, 'utf-8');
   });
 

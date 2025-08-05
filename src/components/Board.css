@@ -1,6 +1,6 @@
 .board {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  background: linear-gradient(135deg, #e6f7ff 0%, #b3e5fc 100%);
   padding: 20px;
 }
 
@@ -21,7 +21,7 @@
   color: #1a202c;
   font-size: 32px;
   font-weight: 800;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0f4c75 0%, #20b2aa 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -55,13 +55,13 @@
 }
 
 .search-filter-toggle.active {
-  background: #3b82f6;
+  background: #0f4c75;
   color: white;
-  border-color: #2563eb;
+  border-color: #1e6091;
 }
 
 .search-filter-toggle.active:hover {
-  background: #2563eb;
+  background: #1e6091;
 }
 
 .active-indicator {
@@ -75,13 +75,13 @@
 }
 
 .filter-status-bar {
-  background: #f0f9ff;
-  color: #0369a1;
+  background: #e6f7ff;
+  color: #0f4c75;
   padding: 8px 16px;
   border-radius: 6px;
   font-size: 13px;
   font-weight: 500;
-  border: 1px solid #bae6fd;
+  border: 1px solid #a8e6cf;
   text-align: center;
 }
 
@@ -111,19 +111,19 @@
 }
 
 .import-btn {
-  background: #059669;
+  background: #20b2aa;
 }
 
 .import-btn:hover {
-  background: #047857;
+  background: #1a9e99;
 }
 
 .export-btn {
-  background: #7c3aed;
+  background: #0f4c75;
 }
 
 .export-btn:hover {
-  background: #6d28d9;
+  background: #1e6091;
 }
 
 .view-selector {
@@ -153,8 +153,8 @@
 
 .view-selector select:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: #20b2aa;
+  box-shadow: 0 0 0 3px rgba(32, 178, 170, 0.1);
 }
 
 .view-selector select:hover {
@@ -162,7 +162,7 @@
 }
 
 .add-task-btn {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0f4c75 0%, #20b2aa 100%);
   color: white;
   border: none;
   padding: 12px 20px;
@@ -211,7 +211,7 @@
 
 /* Drag and drop styles */
 .board.drag-over {
-  background: #f0f9ff;
+  background: #e6f7ff;
 }
 
 .drag-overlay {
@@ -220,8 +220,8 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(59, 130, 246, 0.1);
-  border: 3px dashed #3b82f6;
+  background: rgba(32, 178, 170, 0.1);
+  border: 3px dashed #20b2aa;
   border-radius: 12px;
   display: flex;
   align-items: center;
@@ -232,7 +232,7 @@
 
 .drag-message {
   text-align: center;
-  color: #1e40af;
+  color: #0f4c75;
   font-weight: 600;
 }
 
@@ -296,7 +296,7 @@
 }
 
 .task-count {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0f4c75 0%, #20b2aa 100%);
   color: white;
   padding: 6px 12px;
   border-radius: 20px;
@@ -504,16 +504,16 @@
 
 /* Drag & Drop styles */
 .column-content--over {
-  background-color: #f0f9ff;
-  border: 2px dashed #3b82f6;
+  background-color: #e6f7ff;
+  border: 2px dashed #20b2aa;
   border-radius: 8px;
 }
 
 .empty-column.column-content--over {
-  border-color: #3b82f6;
-  background-color: #f0f9ff;
-  color: #3b82f6;
-  background: #a0aec0;
+  border-color: #20b2aa;
+  background-color: #e6f7ff;
+  color: #0f4c75;
+  background: #a8e6cf;
 }
 
 .board-columns::-webkit-scrollbar {

@@ -19,7 +19,7 @@
   left: 0;
   right: 0;
   height: 2px;
-  background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.3), transparent);
+  background: linear-gradient(90deg, transparent, rgba(32, 178, 170, 0.3), transparent);
   transform: scaleX(0);
   transition: transform 0.3s ease;
 }
@@ -27,7 +27,7 @@
 .card:hover {
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1), 0 4px 10px rgba(0, 0, 0, 0.05);
   transform: translateY(-2px);
-  border-color: rgba(102, 126, 234, 0.2);
+  border-color: rgba(32, 178, 170, 0.2);
 }
 
 .card:hover::before {
@@ -183,23 +183,23 @@
 }
 
 .story-points {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0f4c75 0%, #20b2aa 100%);
   color: white;
   padding: 4px 8px;
   border-radius: 8px;
   font-weight: 700;
   font-size: 12px;
-  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
+  box-shadow: 0 2px 4px rgba(15, 76, 117, 0.2);
 }
 
 .epic-name {
-  color: #38a169;
+  color: #20b2aa;
   font-weight: 600;
   font-size: 12px;
-  background: #f0fff4;
+  background: #e6f7ff;
   padding: 2px 6px;
   border-radius: 4px;
-  border: 1px solid #c6f6d5;
+  border: 1px solid #a8e6cf;
 }
 
 .card-description {
@@ -247,7 +247,7 @@
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #48bb78, #38a169);
+  background: linear-gradient(90deg, #20b2aa, #4fd1c7);
   transition: width 0.3s ease;
   border-radius: 3px;
   position: relative;
@@ -336,9 +336,9 @@
 }
 
 .card:focus {
-  outline: 2px solid #3b82f6;
+  outline: 2px solid #20b2aa;
   outline-offset: 2px;
-  border-left-color: #48bb78;
+  border-left-color: #20b2aa;
 }
 
 /* Mobile-specific card enhancements */

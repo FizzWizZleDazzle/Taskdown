@@ -57,7 +57,7 @@
   margin: 0;
   font-size: 28px;
   font-weight: 800;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0f4c75 0%, #20b2aa 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -154,8 +154,8 @@
 .form-group select:focus,
 .form-group textarea:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: #20b2aa;
+  box-shadow: 0 0 0 3px rgba(32, 178, 170, 0.1);
 }
 
 .form-group input:hover,
@@ -207,7 +207,7 @@
 }
 
 .input-with-add button {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0f4c75 0%, #20b2aa 100%);
   color: white;
   border: none;
   padding: 12px 16px;
@@ -216,12 +216,12 @@
   cursor: pointer;
   white-space: nowrap;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
+  box-shadow: 0 2px 4px rgba(15, 76, 117, 0.2);
 }
 
 .input-with-add button:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 4px 8px rgba(15, 76, 117, 0.3);
 }
 
 .tags {
@@ -232,8 +232,8 @@
 }
 
 .tag {
-  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-  color: #1e40af;
+  background: linear-gradient(135deg, #e6f7ff 0%, #a8e6cf 100%);
+  color: #0f4c75;
   padding: 6px 12px;
   border-radius: 8px;
   font-size: 12px;
@@ -241,14 +241,14 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  border: 1px solid #93c5fd;
-  box-shadow: 0 1px 3px rgba(59, 130, 246, 0.1);
+  border: 1px solid #4fd1c7;
+  box-shadow: 0 1px 3px rgba(32, 178, 170, 0.1);
 }
 
 .tag button {
   background: none;
   border: none;
-  color: #1e40af;
+  color: #0f4c75;
   cursor: pointer;
   font-size: 14px;
   font-weight: bold;
@@ -263,7 +263,7 @@
 }
 
 .tag button:hover {
-  background: #1e40af;
+  background: #0f4c75;
   color: white;
   transform: scale(1.1);
 }
@@ -305,13 +305,13 @@
 }
 
 .save-btn {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0f4c75 0%, #20b2aa 100%);
   color: white;
 }
 
 .save-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 12px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 6px 12px rgba(15, 76, 117, 0.3);
 }
 
 .save-btn:disabled {

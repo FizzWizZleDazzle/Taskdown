@@ -39,8 +39,8 @@
 
 .search-input:focus {
   outline: none;
-  border-color: #80bdff;
-  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+  border-color: #20b2aa;
+  box-shadow: 0 0 0 2px rgba(32, 178, 170, 0.25);
 }
 
 .clear-search-btn {
@@ -94,7 +94,7 @@
 
 .filter-select:focus {
   outline: none;
-  border-color: #80bdff;
+  border-color: #20b2aa;
 }
 
 .clear-filters-btn {

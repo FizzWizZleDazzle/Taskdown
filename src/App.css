@@ -1,6 +1,6 @@
 .app {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  background: linear-gradient(135deg, #e6f7ff 0%, #b3e5fc 100%);
 }
 
 * {
@@ -20,18 +20,18 @@ body {
 
 /* Focus styles for accessibility */
 *:focus {
-  outline: 2px solid #667eea;
+  outline: 2px solid #20b2aa;
   outline-offset: 2px;
 }
 
 /* Selection styles */
 ::selection {
-  background: #667eea;
+  background: #20b2aa;
   color: white;
 }
 
 ::-moz-selection {
-  background: #667eea;
+  background: #20b2aa;
   color: white;
 }
 
@@ -48,5 +48,65 @@ html {
   
   .badge {
     border: 1px solid #2d3748;
+  }
+}
+
+/* Auto-save indicator */
+.auto-save-indicator {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  font-size: 12px;
+  color: #0f4c75;
+  opacity: 0.8;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid #a8e6cf;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  font-weight: 500;
+  transition: opacity 0.3s ease, transform 0.2s ease;
+}
+
+.auto-save-indicator:hover {
+  opacity: 1;
+}
+
+/* Saving state animation */
+.auto-save-indicator span {
+  display: inline-block;
+}
+
+/* Subtle pulse animation for saving state */
+.auto-save-indicator:has(span:first-child) {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Responsive auto-save indicator */
+@media (max-width: 768px) {
+  .auto-save-indicator {
+    bottom: 12px;
+    right: 12px;
+    font-size: 11px;
+    padding: 4px 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .auto-save-indicator {
+    bottom: 8px;
+    right: 8px;
+    font-size: 10px;
+    padding: 3px 6px;
   }
 }

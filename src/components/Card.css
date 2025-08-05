@@ -1,16 +1,40 @@
 .card {
   background: white;
-  border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 12px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.1);
   cursor: pointer;
-  transition: all 0.2s ease;
-  border-left: 4px solid #e5e7eb;
+  transition: all 0.3s ease;
+  border-left: 4px solid #e2e8f0;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  position: relative;
+  overflow: hidden;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.3), transparent);
+  transform: scaleX(0);
+  transition: transform 0.3s ease;
 }
 
 .card:hover {
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1), 0 4px 10px rgba(0, 0, 0, 0.05);
+  transform: translateY(-2px);
+  border-color: rgba(102, 126, 234, 0.2);
+}
+
+.card:hover::before {
+  transform: scaleX(1);
+}
+
+.card:active {
   transform: translateY(-1px);
 }
 
@@ -18,76 +42,107 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 
 .card-id {
-  font-weight: 600;
-  color: #374151;
+  font-weight: 700;
+  color: #4a5568;
   font-size: 14px;
+  font-family: 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+  background: #f7fafc;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
 }
 
 .card-badges {
   display: flex;
-  gap: 6px;
+  gap: 8px;
 }
 
 .badge {
-  padding: 2px 8px;
-  border-radius: 12px;
+  padding: 4px 10px;
+  border-radius: 16px;
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 600;
   color: white;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.badge::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.card:hover .badge::before {
+  left: 100%;
 }
 
 .card-title {
-  margin: 0 0 12px 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: #111827;
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #2d3748;
   line-height: 1.4;
+  letter-spacing: -0.025em;
 }
 
 .card-meta {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  margin-bottom: 12px;
+  gap: 6px;
+  margin-bottom: 16px;
 }
 
 .meta-item {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 12px;
+  gap: 8px;
+  font-size: 13px;
 }
 
 .meta-label {
-  color: #6b7280;
-  font-weight: 500;
+  color: #718096;
+  font-weight: 600;
+  min-width: fit-content;
 }
 
 .story-points {
-  background: #ddd6fe;
-  color: #5b21b6;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-weight: 600;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 12px;
+  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
 }
 
 .epic-name {
-  color: #059669;
-  font-weight: 500;
-  font-size: 11px;
+  color: #38a169;
+  font-weight: 600;
+  font-size: 12px;
+  background: #f0fff4;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid #c6f6d5;
 }
 
 .card-description {
-  font-size: 13px;
-  color: #4b5563;
-  line-height: 1.5;
-  margin: 0 0 12px 0;
+  font-size: 14px;
+  color: #4a5568;
+  line-height: 1.6;
+  margin: 0 0 16px 0;
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
@@ -95,77 +150,102 @@
 }
 
 .progress-section {
-  margin: 8px 0;
+  margin: 12px 0;
 }
 
 .progress-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 4px;
-  font-size: 11px;
-  font-weight: 500;
-  color: #6b7280;
+  margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #718096;
 }
 
 .progress-count {
-  color: #374151;
-  font-weight: 600;
+  color: #2d3748;
+  font-weight: 700;
+  background: #edf2f7;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
 }
 
 .progress-bar {
   width: 100%;
-  height: 4px;
-  background-color: #e5e7eb;
-  border-radius: 2px;
+  height: 6px;
+  background-color: #edf2f7;
+  border-radius: 3px;
   overflow: hidden;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #10b981, #34d399);
+  background: linear-gradient(90deg, #48bb78, #38a169);
   transition: width 0.3s ease;
-  border-radius: 2px;
+  border-radius: 3px;
+  position: relative;
+}
+
+.progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
 
 .card-footer {
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid #f3f4f6;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #edf2f7;
 }
 
 .dependencies {
-  margin-bottom: 6px;
-  font-size: 11px;
+  margin-bottom: 8px;
+  font-size: 12px;
 }
 
 .deps-label {
-  color: #6b7280;
-  font-weight: 500;
-  margin-right: 6px;
+  color: #718096;
+  font-weight: 600;
+  margin-right: 8px;
 }
 
 .dep-tag {
-  background: #f3f4f6;
-  color: #374151;
-  padding: 2px 6px;
-  border-radius: 4px;
-  margin-right: 4px;
-  font-weight: 500;
+  background: linear-gradient(135deg, #edf2f7 0%, #e2e8f0 100%);
+  color: #4a5568;
+  padding: 4px 8px;
+  border-radius: 6px;
+  margin-right: 6px;
+  font-weight: 600;
   white-space: nowrap;
+  border: 1px solid #e2e8f0;
+  font-family: 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+  font-size: 11px;
 }
 
-/* Status-based card border colors */
+/* Enhanced status-based card border colors */
 .card[data-status="Todo"] {
-  border-left-color: #6b7280;
+  border-left-color: #718096;
 }
 
 .card[data-status="In Progress"] {
-  border-left-color: #f59e0b;
+  border-left-color: #ed8936;
 }
 
 .card[data-status="In Review"] {
-  border-left-color: #8b5cf6;
+  border-left-color: #9f7aea;
 }
 
 .card[data-status="Done"] {
@@ -194,4 +274,59 @@
 .card:focus {
   outline: 2px solid #3b82f6;
   outline-offset: 2px;
+  border-left-color: #48bb78;
+}
+
+/* Mobile-specific card enhancements */
+@media (max-width: 480px) {
+  .card {
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+  
+  .card-title {
+    font-size: 16px;
+  }
+  
+  .card-header {
+    margin-bottom: 12px;
+  }
+  
+  .card-meta {
+    margin-bottom: 12px;
+  }
+  
+  .meta-item {
+    font-size: 12px;
+  }
+  
+  .card-description {
+    font-size: 13px;
+    -webkit-line-clamp: 2;
+  }
+  
+  .progress-section {
+    margin: 10px 0;
+  }
+  
+  .card-footer {
+    margin-top: 12px;
+    padding-top: 12px;
+  }
+  
+  .dep-tag {
+    margin-bottom: 4px;
+    display: inline-block;
+  }
+}
+
+/* Tablet-specific card enhancements */
+@media (min-width: 481px) and (max-width: 768px) {
+  .card {
+    padding: 18px;
+  }
+  
+  .card-title {
+    font-size: 17px;
+  }
 }

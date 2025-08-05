@@ -12,7 +12,7 @@ const Checklist: React.FC<ChecklistProps> = ({ title, items, onChange }) => {
   const [newItemText, setNewItemText] = useState('');
 
   const generateId = () => {
-    return Math.random().toString(36).substr(2, 9);
+    return crypto.randomUUID();
   };
 
   const handleAddItem = () => {

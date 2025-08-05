@@ -29,6 +29,25 @@ export interface Task {
 
 export type ColumnType = 'epic' | 'sprint' | 'status';
 
+// Search and Filter types
+export interface SearchAndFilterState {
+  searchText: string;
+  filterPriority: Priority | 'All';
+  filterType: TaskType | 'All';
+  filterStatus: TaskStatus | 'All';
+  filterEpic: string | 'All';
+  filterSprint: string | 'All';
+}
+
+export const defaultSearchAndFilterState: SearchAndFilterState = {
+  searchText: '',
+  filterPriority: 'All',
+  filterType: 'All',
+  filterStatus: 'All',
+  filterEpic: 'All',
+  filterSprint: 'All'
+};
+
 // Parser-specific types for Markdown conversion
 /**
  * Represents a Jira-style card with all metadata for parser

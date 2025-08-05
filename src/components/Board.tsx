@@ -13,8 +13,11 @@ import {
 } from '@dnd-kit/core';
 import { Task, ColumnType, TaskStatus } from '../types';
 import { TASK_STATUSES, COLUMN_TYPES, COLORS } from '../constants';
+import { filterTasks, hasActiveSearchOrFilter } from '../filterUtils';
 import Card from './Card';
 import TaskModal from './TaskModal';
+import SearchAndFilter from './SearchAndFilter';
+import { SearchAndFilterState, defaultSearchAndFilterState } from '../types';
 import './Board.css';
 
 // Type guard function for TaskStatus validation
@@ -105,11 +108,13 @@ const Board: React.FC<BoardProps> = ({
   onExport
 }) => {
   const [columnType, setColumnType] = useState<ColumnType>(COLUMN_TYPES.STATUS);
-
-  // From copilot/fix: Add state for drag & drop
+  const [searchAndFilter, setSearchAndFilter] = useState<SearchAndFilterState>(defaultSearchAndFilterState);
+  const [showSearchAndFilter, setShowSearchAndFilter] = useState(false);
+  
+  // Add state for drag & drop
   const [activeTask, setActiveTask] = useState<Task | null>(null);
-
-  // From main: Use controlled component logic for editing state
+  
+  // Use external editing state if provided, otherwise use internal state
   const [internalEditingState, setInternalEditingState] = useState({
     isModalOpen: false,
     selectedTaskId: null as string | null,
@@ -135,18 +140,23 @@ const Board: React.FC<BoardProps> = ({
   
   const [isDragOver, setIsDragOver] = useState(false);
 
+  // Apply search and filter to tasks
+  const filteredTasks = useMemo(() => {
+    return filterTasks(tasks, searchAndFilter);
+  }, [tasks, searchAndFilter]);
+
   const columns = useMemo(() => {
     switch (columnType) {
       case COLUMN_TYPES.STATUS:
         return {
-          [TASK_STATUSES.TODO]: tasks.filter(task => task.status === TASK_STATUSES.TODO),
-          [TASK_STATUSES.IN_PROGRESS]: tasks.filter(task => task.status === TASK_STATUSES.IN_PROGRESS),
-          [TASK_STATUSES.IN_REVIEW]: tasks.filter(task => task.status === TASK_STATUSES.IN_REVIEW),
-          [TASK_STATUSES.DONE]: tasks.filter(task => task.status === TASK_STATUSES.DONE),
+          [TASK_STATUSES.TODO]: filteredTasks.filter(task => task.status === TASK_STATUSES.TODO),
+          [TASK_STATUSES.IN_PROGRESS]: filteredTasks.filter(task => task.status === TASK_STATUSES.IN_PROGRESS),
+          [TASK_STATUSES.IN_REVIEW]: filteredTasks.filter(task => task.status === TASK_STATUSES.IN_REVIEW),
+          [TASK_STATUSES.DONE]: filteredTasks.filter(task => task.status === TASK_STATUSES.DONE),
         };
       case COLUMN_TYPES.EPIC:
         const epicGroups: Record<string, Task[]> = {};
-        tasks.forEach(task => {
+        filteredTasks.forEach(task => {
           const epic = task.epic || 'No Epic';
           if (!epicGroups[epic]) {
             epicGroups[epic] = [];
@@ -156,7 +166,7 @@ const Board: React.FC<BoardProps> = ({
         return epicGroups;
       case COLUMN_TYPES.SPRINT:
         const sprintGroups: Record<string, Task[]> = {};
-        tasks.forEach(task => {
+        filteredTasks.forEach(task => {
           const sprint = task.sprint || 'No Sprint';
           if (!sprintGroups[sprint]) {
             sprintGroups[sprint] = [];
@@ -167,7 +177,7 @@ const Board: React.FC<BoardProps> = ({
       default:
         return {};
     }
-  }, [tasks, columnType]);
+  }, [filteredTasks, columnType]);
 
   const handleEditTask = useCallback((task: Task) => {
     setEditingState({
@@ -288,6 +298,14 @@ const Board: React.FC<BoardProps> = ({
     }
   }, [onFileImport]);
 
+  const toggleSearchAndFilter = useCallback(() => {
+    setShowSearchAndFilter(prev => !prev);
+  }, []);
+
+  const totalTasksCount = tasks.length;
+  const filteredTasksCount = filteredTasks.length;
+  const hasActiveFilters = hasActiveSearchOrFilter(searchAndFilter);
+
   return (
     <DndContext
       sensors={sensors}
@@ -317,7 +335,14 @@ const Board: React.FC<BoardProps> = ({
                 <option value={COLUMN_TYPES.SPRINT}>Sprint</option>
               </select>
             </div>
-
+            <button 
+              className={`search-filter-toggle ${showSearchAndFilter ? 'active' : ''}`}
+              onClick={toggleSearchAndFilter}
+              aria-label="Toggle search and filter controls"
+            >
+              🔍 {showSearchAndFilter ? 'Hide' : 'Search'} & Filter
+              {hasActiveFilters && <span className="active-indicator">●</span>}
+            </button>
             <div className="file-controls">
               <input
                 type="file"
@@ -350,7 +375,20 @@ const Board: React.FC<BoardProps> = ({
               + Add Task
             </button>
           </div>
+          {hasActiveFilters && (
+            <div className="filter-status-bar">
+              Showing {filteredTasksCount} of {totalTasksCount} tasks
+            </div>
+          )}
         </div>
+
+        {showSearchAndFilter && (
+          <SearchAndFilter
+            tasks={tasks}
+            searchAndFilter={searchAndFilter}
+            onSearchAndFilterChange={setSearchAndFilter}
+          />
+        )}
 
         <div className="board-columns">
           {isDragOver && (

@@ -1,22 +1,33 @@
 {
-  "name": "taskdown-workspace",
+
+  "name": "taskdown",
   "version": "1.0.0",
-  "description": "Taskdown - Jira-style Markdown parser and web application",
-  "private": true,
-  "workspaces": [
-    "packages/*"
-  ],
+  "description": "Task management board with card UI",
+  "main": "index.js",
   "scripts": {
-    "build": "npm run build --workspaces",
-    "test": "npm run test --workspaces",
-    "dev:parser": "npm run dev --workspace=packages/taskdown-parser",
-    "build:parser": "npm run build --workspace=packages/taskdown-parser",
-    "test:parser": "npm run test --workspace=packages/taskdown-parser"
+    "start": "webpack serve --mode development",
+    "build": "webpack --mode production",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": ["taskdown", "markdown", "jira", "parser", "workspace"],
-  "author": "FizzWizZleDazzle",
-  "license": "MIT",
+  "keywords": ["task", "management", "kanban", "react"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
   "devDependencies": {
-    "typescript": "^5.8.3"
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@typescript-eslint/eslint-plugin": "^5.0.0",
+    "@typescript-eslint/parser": "^5.0.0",
+    "css-loader": "^6.0.0",
+    "html-webpack-plugin": "^5.0.0",
+    "style-loader": "^3.0.0",
+    "ts-loader": "^9.0.0",
+    "typescript": "^4.0.0",
+    "webpack": "^5.0.0",
+    "webpack-cli": "^4.0.0",
+    "webpack-dev-server": "^4.0.0"
   }
 }

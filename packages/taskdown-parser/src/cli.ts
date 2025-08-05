@@ -63,7 +63,11 @@ function main() {
 }
 
 function handleParse(filename: string) {
-  const markdown = fs.readFileSync(filename, 'utf-8');
+  // When run via npm workspaces, use INIT_CWD to get the original working directory
+  const originalCwd = process.env.INIT_CWD || process.cwd();
+  const resolvedPath = path.resolve(originalCwd, filename);
+  
+  const markdown = fs.readFileSync(resolvedPath, 'utf-8');
   const boardData = parseMarkdown(markdown);
   
   console.log('Parsed board data:');
@@ -71,7 +75,10 @@ function handleParse(filename: string) {
 }
 
 function handleSerialize(filename: string) {
-  const jsonData = fs.readFileSync(filename, 'utf-8');
+  const originalCwd = process.env.INIT_CWD || process.cwd();
+  const resolvedPath = path.resolve(originalCwd, filename);
+  
+  const jsonData = fs.readFileSync(resolvedPath, 'utf-8');
   const boardData = JSON.parse(jsonData);
   
   const markdown = serializeToMarkdown(boardData);
@@ -80,8 +87,11 @@ function handleSerialize(filename: string) {
 }
 
 function handleRoundtrip(filename: string) {
+  const originalCwd = process.env.INIT_CWD || process.cwd();
+  const resolvedPath = path.resolve(originalCwd, filename);
+  
   console.log(`\n=== Original Markdown (${filename}) ===`);
-  const originalMarkdown = fs.readFileSync(filename, 'utf-8');
+  const originalMarkdown = fs.readFileSync(resolvedPath, 'utf-8');
   console.log(originalMarkdown);
   
   console.log('\n=== Parsed to JSON ===');

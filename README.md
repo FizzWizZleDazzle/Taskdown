@@ -1,8 +1,37 @@
 # Taskdown
 
+A workspace containing the Taskdown parser and future web application. The parser converts Jira-style Markdown to structured board data and back.
+
+## Structure
+
+- `packages/taskdown-parser/` - Core parser and serializer library
+- Future: Web application for visual board management
+
+## Quick Start
+
+From the workspace root:
+
+```bash
+# Install all dependencies
+npm install
+
+# Build the parser
+npm run build:parser
+
+# Test the parser
+npm run test:parser
+
+# Use the CLI
+npm run dev:parser -- parse example.md
+```
+
+## Packages
+
+### Taskdown Parser (`packages/taskdown-parser/`)
+
 A parser and serializer for converting Jira-style Markdown to structured board data and back. Perfect for managing development epics and cards in a human-readable Markdown format while maintaining the ability to process the data programmatically.
 
-## Features
+#### Features
 
 - **Parse Jira-style Markdown** into structured board data (epics, cards, checklists)
 - **Serialize board data** back to Markdown for export
@@ -15,8 +44,11 @@ A parser and serializer for converting Jira-style Markdown to structured board d
 ## Installation
 
 ```bash
+# From workspace root
 npm install
-npm run build
+
+# Build the parser
+npm run build:parser
 ```
 
 ## Usage
@@ -24,7 +56,7 @@ npm run build
 ### Programmatic API
 
 ```typescript
-import { parseMarkdown, serializeToMarkdown } from './src/index';
+import { parseMarkdown, serializeToMarkdown } from './packages/taskdown-parser/src/index';
 
 // Parse Markdown to structured data
 const markdown = `
@@ -52,13 +84,13 @@ console.log(newMarkdown);
 
 ```bash
 # Parse Markdown file to JSON
-npm run dev -- parse example.md
+npm run dev:parser -- parse example.md
 
 # Perform round-trip conversion test
-npm run dev -- roundtrip example.md
+npm run dev:parser -- roundtrip example.md
 
 # Show help
-npm run dev -- help
+npm run dev:parser -- help
 ```
 
 ## Markdown Format
@@ -110,18 +142,25 @@ npm run dev -- help
 
 ### Build
 ```bash
+# Build all packages
 npm run build
+
+# Build specific package
+npm run build:parser
 ```
 
 ### Test
 ```bash
+# Test all packages
 npm test
-npm run test:watch
+
+# Test specific package
+npm run test:parser
 ```
 
 ### Development CLI
 ```bash
-npm run dev -- <command> <args>
+npm run dev:parser -- <command> <args>
 ```
 
 ## API Reference

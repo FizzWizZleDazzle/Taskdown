@@ -9,7 +9,7 @@ describe('Integration Tests', () => {
 
   beforeAll(() => {
     // Read the example.md file
-    const examplePath = path.join(__dirname, '../../example.md');
+    const examplePath = path.join(__dirname, '../../../../example.md');
     exampleMarkdown = fs.readFileSync(examplePath, 'utf-8');
   });
 

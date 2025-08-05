@@ -1,26 +1,22 @@
 {
-  "name": "taskdown",
+  "name": "taskdown-workspace",
   "version": "1.0.0",
-  "description": "Parser and serializer for Jira-style Markdown to board data conversion",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "description": "Taskdown - Jira-style Markdown parser and web application",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
-    "build": "tsc",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "dev": "ts-node src/cli.ts",
-    "lint": "echo \"No linter configured yet\"",
-    "clean": "rm -rf dist"
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspaces",
+    "dev:parser": "npm run dev --workspace=packages/taskdown-parser",
+    "build:parser": "npm run build --workspace=packages/taskdown-parser",
+    "test:parser": "npm run test --workspace=packages/taskdown-parser"
   },
-  "keywords": ["markdown", "jira", "parser", "serializer", "board", "cards", "epics"],
+  "keywords": ["taskdown", "markdown", "jira", "parser", "workspace"],
   "author": "FizzWizZleDazzle",
   "license": "MIT",
   "devDependencies": {
-    "@types/jest": "^30.0.0",
-    "@types/node": "^24.1.0",
-    "jest": "^30.0.5",
-    "ts-jest": "^29.4.0",
-    "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
   }
 }

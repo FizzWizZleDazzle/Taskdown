@@ -19,9 +19,7 @@ const App: React.FC = () => {
   });
 
   const generateId = () => {
-    const prefix = 'TASK';
-    const number = Math.floor(Math.random() * 900) + 100;
-    return `${prefix}-${number}`;
+    return `TASK-${crypto.randomUUID()}`;
   };
 
   const handleTaskUpdate = (updatedTask: Task) => {

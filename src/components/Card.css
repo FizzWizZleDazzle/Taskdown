@@ -249,6 +249,31 @@
 }
 
 .card[data-status="Done"] {
+  border-left-color: #10b981;
+}
+
+/* Drag & Drop styles */
+.card-drag-handle {
+  cursor: grab;
+  user-select: none;
+}
+
+.card-drag-handle:active {
+  cursor: grabbing;
+}
+
+.card-content {
+  cursor: pointer;
+}
+
+.card.dragging {
+  opacity: 0.5;
+  transform: rotate(5deg);
+}
+
+.card:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
   border-left-color: #48bb78;
 }
 

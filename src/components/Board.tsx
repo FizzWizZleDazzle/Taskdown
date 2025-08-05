@@ -17,10 +17,18 @@ import Card from './Card';
 import TaskModal from './TaskModal';
 import './Board.css';
 
+interface EditingState {
+  isModalOpen: boolean;
+  selectedTaskId: string | null;
+  isCreating: boolean;
+}
+
 interface BoardProps {
   tasks: Task[];
   onTaskUpdate: (task: Task) => void;
   onTaskCreate: (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  editingState?: EditingState;
+  onEditingStateChange?: (state: EditingState) => void;
   onFileImport: (file: File) => void;
   onExport: () => void;
 }
@@ -31,7 +39,6 @@ interface DroppableColumnProps {
   getColumnColor: (columnName: string) => string;
   handleEditTask: (task: Task) => void;
   activeTask: Task | null;
-  getTaskIds: (tasks: Task[]) => string[];
 }
 
 const DroppableColumn: React.FC<DroppableColumnProps> = ({
@@ -40,17 +47,14 @@ const DroppableColumn: React.FC<DroppableColumnProps> = ({
   getColumnColor,
   handleEditTask,
   activeTask,
-  getTaskIds
 }) => {
   const { setNodeRef, isOver } = useDroppable({
     id: columnName,
   });
 
-  console.log('DroppableColumn rendered:', columnName, 'isOver:', isOver);
-
   return (
     <div className="column" role="region" aria-label={`${columnName} tasks`}>
-      <div 
+      <div
         className="column-header"
         style={{ borderTopColor: getColumnColor(columnName) }}
       >
@@ -59,7 +63,7 @@ const DroppableColumn: React.FC<DroppableColumnProps> = ({
           {columnTasks.length}
         </span>
       </div>
-      <div 
+      <div
         ref={setNodeRef}
         className={`column-content ${isOver ? 'column-content--over' : ''}`}
         role="list"
@@ -68,8 +72,8 @@ const DroppableColumn: React.FC<DroppableColumnProps> = ({
       >
         {columnTasks.map(task => (
           <div key={task.id} role="listitem">
-            <Card 
-              task={task} 
+            <Card
+              task={task}
               onEdit={handleEditTask}
               isDragging={activeTask?.id === task.id}
             />
@@ -85,22 +89,45 @@ const DroppableColumn: React.FC<DroppableColumnProps> = ({
   );
 };
 
-
-const Board: React.FC<BoardProps> = ({ tasks, onTaskUpdate, onTaskCreate, onFileImport, onExport }) => {
+// Start of the Board component, combining props from `main`
+const Board: React.FC<BoardProps> = ({
+  tasks,
+  onTaskUpdate,
+  onTaskCreate,
+  editingState: externalEditingState,
+  onEditingStateChange,
+  onFileImport,
+  onExport
+}) => {
   const [columnType, setColumnType] = useState<ColumnType>(COLUMN_TYPES.STATUS);
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
+
+  // From copilot/fix: Add state for drag & drop
   const [activeTask, setActiveTask] = useState<Task | null>(null);
 
-  // Configure sensors for drag & drop
+  // From main: Use controlled component logic for editing state
+  const [internalEditingState, setInternalEditingState] = useState({
+    isModalOpen: false,
+    selectedTaskId: null as string | null,
+    isCreating: false
+  });
+
+  const editingState = externalEditingState || internalEditingState;
+  const setEditingState = onEditingStateChange || setInternalEditingState;
+
+  // From main: Logic to derive the selected task
+  const selectedTask = editingState.selectedTaskId
+    ? tasks.find(task => task.id === editingState.selectedTaskId) || null
+    : null;
+
+  // From copilot/fix: Configure sensors for drag & drop
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8,
+        distance: 8, // Require mouse to move 8px to start dragging
       },
     })
   );
+  
   const [isDragOver, setIsDragOver] = useState(false);
 
   const columns = useMemo(() => {
@@ -138,31 +165,37 @@ const Board: React.FC<BoardProps> = ({ tasks, onTaskUpdate, onTaskCreate, onFile
   }, [tasks, columnType]);
 
   const handleEditTask = useCallback((task: Task) => {
-    setSelectedTask(task);
-    setIsCreating(false);
-    setIsModalOpen(true);
-  }, []);
+    setEditingState({
+      isModalOpen: true,
+      selectedTaskId: task.id,
+      isCreating: false
+    });
+  }, [setEditingState]);
 
   const handleCreateTask = useCallback(() => {
-    setSelectedTask(null);
-    setIsCreating(true);
-    setIsModalOpen(true);
-  }, []);
+    setEditingState({
+      isModalOpen: true,
+      selectedTaskId: null,
+      isCreating: true
+    });
+  }, [setEditingState]);
 
   const handleModalClose = useCallback(() => {
-    setIsModalOpen(false);
-    setSelectedTask(null);
-    setIsCreating(false);
-  }, []);
+    setEditingState({
+      isModalOpen: false,
+      selectedTaskId: null,
+      isCreating: false
+    });
+  }, [setEditingState]);
 
   const handleTaskSave = useCallback((task: Task | Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => {
-    if (isCreating) {
+    if (editingState.isCreating) {
       onTaskCreate(task as Omit<Task, 'id' | 'createdAt' | 'updatedAt'>);
     } else {
       onTaskUpdate(task as Task);
     }
     handleModalClose();
-  }, [isCreating, onTaskCreate, onTaskUpdate, handleModalClose]);
+  }, [editingState.isCreating, onTaskCreate, onTaskUpdate, handleModalClose]);
 
   const getColumnColor = useCallback((columnName: string) => {
     if (columnType === COLUMN_TYPES.STATUS) {
@@ -376,7 +409,16 @@ const Board: React.FC<BoardProps> = ({ tasks, onTaskUpdate, onTaskCreate, onFile
           />
         )}
       </div>
-    </DndContext>
+      {editingState.isModalOpen && (
+        <TaskModal
+          task={selectedTask}
+          isOpen={editingState.isModalOpen}
+          onClose={handleModalClose}
+          onSave={handleTaskSave}
+          isCreating={editingState.isCreating}
+        />
+      )}
+    </div>
   );
 };
 

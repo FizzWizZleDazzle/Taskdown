@@ -63,3 +63,10 @@ export const DEFAULT_FORM_DATA = {
   dependencies: [] as string[],
   blocks: [] as string[]
 };
+
+// LocalStorage keys
+export const STORAGE_KEYS = {
+  BOARD_TASKS: 'taskdown_board_tasks',
+  BOARD_STATE: 'taskdown_board_state',
+  USER_PREFERENCES: 'taskdown_user_preferences'
+} as const;

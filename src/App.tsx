@@ -109,15 +109,8 @@ const App: React.FC = () => {
         onExport={handleExport}
 
       />
-      {/* Optional: Auto-save indicator */}
-      <div className="auto-save-indicator" style={{ 
-        position: 'fixed', 
-        bottom: '10px', 
-        right: '10px', 
-        fontSize: '12px', 
-        color: '#666',
-        opacity: 0.7
-      }}>
+      {/* Auto-save indicator */}
+      <div className="auto-save-indicator">
         Last saved: {lastSaved.toLocaleTimeString()}
       </div>
     </div>

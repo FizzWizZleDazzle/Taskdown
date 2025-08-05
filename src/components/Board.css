@@ -26,6 +26,47 @@
   gap: 16px;
 }
 
+.file-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.import-btn, .export-btn {
+  background: #6b7280;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.import-btn:hover, .export-btn:hover {
+  background: #4b5563;
+}
+
+.import-btn {
+  background: #059669;
+}
+
+.import-btn:hover {
+  background: #047857;
+}
+
+.export-btn {
+  background: #7c3aed;
+}
+
+.export-btn:hover {
+  background: #6d28d9;
+}
+
 .view-selector {
   display: flex;
   align-items: center;
@@ -74,6 +115,45 @@
   gap: 20px;
   overflow-x: auto;
   padding-bottom: 20px;
+  position: relative;
+}
+
+/* Drag and drop styles */
+.board.drag-over {
+  background: #f0f9ff;
+}
+
+.drag-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(59, 130, 246, 0.1);
+  border: 3px dashed #3b82f6;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.drag-message {
+  text-align: center;
+  color: #1e40af;
+  font-weight: 600;
+}
+
+.drag-message span {
+  font-size: 48px;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.drag-message p {
+  margin: 0;
+  font-size: 18px;
 }
 
 .column {
@@ -143,6 +223,21 @@
   .board-controls {
     width: 100%;
     justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  
+  .file-controls {
+    order: 2;
+    gap: 6px;
+  }
+  
+  .add-task-btn {
+    order: 3;
+  }
+  
+  .view-selector {
+    order: 1;
   }
   
   .board-columns {

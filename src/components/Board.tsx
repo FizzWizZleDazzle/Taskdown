@@ -9,6 +9,7 @@ import {
   useSensor,
   useSensors,
   useDroppable,
+  closestCenter,
 } from '@dnd-kit/core';
 import {
   arrayMove,
@@ -49,7 +50,7 @@ const DroppableColumn: React.FC<DroppableColumnProps> = ({
   });
 
   return (
-    <div key={columnName} className="column" role="region" aria-label={`${columnName} tasks`}>
+    <div className="column" role="region" aria-label={`${columnName} tasks`}>
       <div 
         className="column-header"
         style={{ borderTopColor: getColumnColor(columnName) }}
@@ -68,6 +69,7 @@ const DroppableColumn: React.FC<DroppableColumnProps> = ({
           className={`column-content ${isOver ? 'column-content--over' : ''}`}
           role="list"
           data-column-id={columnName}
+          style={{ minHeight: '200px' }} // Ensure droppable area even when empty
         >
           {columnTasks.map(task => (
             <div key={task.id} role="listitem">
@@ -217,9 +219,6 @@ const Board: React.FC<BoardProps> = ({ tasks, onTaskUpdate, onTaskCreate }) => {
         if (oldIndex !== newIndex) {
           // For now, we'll just handle the visual reordering
           // In a real app, you'd want to persist the order
-          const reorderedTasks = arrayMove(columnTasks, oldIndex, newIndex);
-          // Since we don't have a position field, we'll skip persisting the order
-          // but the visual reordering works
         }
       }
     }
@@ -233,8 +232,8 @@ const Board: React.FC<BoardProps> = ({ tasks, onTaskUpdate, onTaskCreate }) => {
   return (
     <DndContext
       sensors={sensors}
+      collisionDetection={closestCenter}
       onDragStart={handleDragStart}
-      onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
       <div className="board">

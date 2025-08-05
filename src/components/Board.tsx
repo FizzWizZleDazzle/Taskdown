@@ -17,6 +17,11 @@ import Card from './Card';
 import TaskModal from './TaskModal';
 import './Board.css';
 
+// Type guard function for TaskStatus validation
+const isValidTaskStatus = (status: string): status is TaskStatus => {
+  return Object.values(TASK_STATUSES).includes(status as TaskStatus);
+};
+
 interface EditingState {
   isModalOpen: boolean;
   selectedTaskId: string | null;
@@ -210,38 +215,23 @@ const Board: React.FC<BoardProps> = ({
     setActiveTask(task || null);
   }, [tasks]);
 
-  const handleDragOver = useCallback((event: DragOverEvent) => {
-    // We'll handle the actual movement in handleDragEnd
-    // This is just for visual feedback
-  }, []);
-
   const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event;
     setActiveTask(null);
-
-    console.log('Drag end:', { activeId: active.id, overId: over?.id });
 
     if (!over || active.id === over.id) return;
 
     const activeTask = tasks.find(t => t.id === active.id);
     if (!activeTask) return;
 
-    console.log('Active task:', activeTask);
-    console.log('Column type:', columnType);
-    console.log('Over ID:', over.id);
-
     // Handle moving between columns (status change)
     if (columnType === COLUMN_TYPES.STATUS) {
       const overColumnId = over.id as string;
       
-      console.log('Task statuses:', Object.values(TASK_STATUSES));
-      console.log('Checking if overColumnId is a status:', overColumnId, Object.values(TASK_STATUSES).includes(overColumnId as TaskStatus));
-      
       // Check if we're dropping on a column (status)
-      if (Object.values(TASK_STATUSES).includes(overColumnId as TaskStatus)) {
+      if (isValidTaskStatus(overColumnId)) {
         if (activeTask.status !== overColumnId) {
-          console.log('Updating task status from', activeTask.status, 'to', overColumnId);
-          const updatedTask = { ...activeTask, status: overColumnId as TaskStatus, updatedAt: new Date() };
+          const updatedTask = { ...activeTask, status: overColumnId, updatedAt: new Date() };
           onTaskUpdate(updatedTask);
         }
         return;
@@ -250,24 +240,19 @@ const Board: React.FC<BoardProps> = ({
       // Handle reordering within the same column
       const overTask = tasks.find(t => t.id === over.id);
       if (overTask && activeTask.status === overTask.status) {
-        console.log('Reordering within same column');
         // Find tasks in the same column
         const columnTasks = tasks.filter(t => t.status === activeTask.status);
         const oldIndex = columnTasks.findIndex(t => t.id === active.id);
         const newIndex = columnTasks.findIndex(t => t.id === over.id);
 
         if (oldIndex !== newIndex) {
-          // For now, we'll just handle the visual reordering
-          // In a real app, you'd want to persist the order
+          // Note: Visual reordering is handled by @dnd-kit automatically
+          // In a real app, you'd want to persist the order by adding an 'order' field to Task
+          // For now, this provides visual feedback without persistence
         }
       }
     }
   }, [tasks, columnType, onTaskUpdate]);
-
-  // Get sorted task IDs for the sortable context
-  const getTaskIds = useCallback((columnTasks: Task[]) => {
-    return columnTasks.map(task => task.id);
-  }, []);
 
   // File drag & drop handlers
   const handleFileInputChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
@@ -384,7 +369,6 @@ const Board: React.FC<BoardProps> = ({
               getColumnColor={getColumnColor}
               handleEditTask={handleEditTask}
               activeTask={activeTask}
-              getTaskIds={getTaskIds}
             />
           ))}
         </div>
@@ -393,32 +377,23 @@ const Board: React.FC<BoardProps> = ({
           {activeTask ? (
             <Card 
               task={activeTask} 
-              onEdit={() => {}} 
+              onEdit={undefined} 
               isDragging={true}
             />
           ) : null}
         </DragOverlay>
 
-        {isModalOpen && (
+        {editingState.isModalOpen && (
           <TaskModal
             task={selectedTask}
-            isOpen={isModalOpen}
+            isOpen={editingState.isModalOpen}
             onClose={handleModalClose}
             onSave={handleTaskSave}
-            isCreating={isCreating}
+            isCreating={editingState.isCreating}
           />
         )}
       </div>
-      {editingState.isModalOpen && (
-        <TaskModal
-          task={selectedTask}
-          isOpen={editingState.isModalOpen}
-          onClose={handleModalClose}
-          onSave={handleTaskSave}
-          isCreating={editingState.isCreating}
-        />
-      )}
-    </div>
+    </DndContext>
   );
 };
 

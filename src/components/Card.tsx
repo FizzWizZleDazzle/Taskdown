@@ -7,7 +7,7 @@ import './Card.css';
 
 interface CardProps {
   task: Task;
-  onEdit: (task: Task) => void;
+  onEdit?: (task: Task) => void;
   isDragging?: boolean;
 }
 
@@ -45,15 +45,15 @@ const Card: React.FC<CardProps> = ({ task, onEdit, isDragging = false }) => {
   };
 
   const handleClick = (e: React.MouseEvent) => {
-    // Only handle click if we're not dragging
-    if (!isDragActive && !isDragging) {
+    // Only handle click if we're not dragging and onEdit is provided
+    if (!isDragActive && !isDragging && onEdit) {
       e.stopPropagation();
       onEdit(task);
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' || e.key === ' ') {
+    if ((e.key === 'Enter' || e.key === ' ') && onEdit) {
       e.preventDefault();
       onEdit(task);
     }
@@ -66,9 +66,11 @@ const Card: React.FC<CardProps> = ({ task, onEdit, isDragging = false }) => {
       {...attributes}
       className="card" 
       data-status={task.status} 
-      tabIndex={0}
-      role="button"
-      aria-label={`Edit task ${task.id}: ${task.title}`}
+      onClick={handleClick}
+      onKeyDown={handleKeyDown}
+      tabIndex={onEdit ? 0 : -1}
+      role={onEdit ? "button" : undefined}
+      aria-label={onEdit ? `Edit task ${task.id}: ${task.title}` : undefined}
     >
       {/* Drag handle - top section */}
       <div {...listeners} className="card-drag-handle">
@@ -92,14 +94,7 @@ const Card: React.FC<CardProps> = ({ task, onEdit, isDragging = false }) => {
       </div>
       
       {/* Click to edit area - rest of the card */}
-      <div 
-        onClick={handleClick} 
-        onKeyDown={handleKeyDown} 
-        className="card-content"
-        tabIndex={0} 
-        role="button" 
-        aria-label={`Edit task ${task.id}: ${task.title}`}
-      >
+      <div className="card-content">
         <h3 className="card-title">{task.title}</h3>
         
         <div className="card-meta">

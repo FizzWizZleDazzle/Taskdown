@@ -21,6 +21,9 @@ export interface IWorkspaceDataService {
   // Import/Export
   importMarkdown?(markdown: string, options?: any): Promise<any>;
   exportMarkdown?(): Promise<{ markdown: string; filename: string }>;
+  
+  // Remote client access (for dashboard features)
+  getRemoteClient?(): IRemoteWorkspaceClient | undefined;
 }
 
 /**
@@ -135,6 +138,10 @@ export class LocalWorkspaceDataService implements IWorkspaceDataService {
       throw new Error('Failed to save tasks to local storage');
     }
   }
+
+  getRemoteClient(): IRemoteWorkspaceClient | undefined {
+    return undefined; // Local workspaces don't have remote clients
+  }
 }
 
 /**
@@ -181,7 +188,8 @@ export class RemoteWorkspaceDataService implements IWorkspaceDataService {
 
   async getTasks(): Promise<Task[]> {
     try {
-      const result = await this.client.getTasks(this.lastSync);
+      const params = this.lastSync ? { lastSync: this.lastSync.toISOString() } : undefined;
+      const result = await this.client.getTasks(params);
       
       // Convert date strings to Date objects
       const tasks = result.tasks.map(task => ({
@@ -283,6 +291,10 @@ export class RemoteWorkspaceDataService implements IWorkspaceDataService {
 
   async exportMarkdown(): Promise<{ markdown: string; filename: string }> {
     return await this.client.exportMarkdown();
+  }
+
+  getRemoteClient(): IRemoteWorkspaceClient | undefined {
+    return this.client;
   }
 }
 

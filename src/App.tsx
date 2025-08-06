@@ -8,9 +8,13 @@ import { tasksToBoard, boardToTasks } from './converters';
 import { createWorkspaceDataService, IWorkspaceDataService } from './workspaceService';
 import Board from './components/Board';
 import WorkspaceSwitcher from './components/WorkspaceSwitcher';
+import { Dashboard } from './components/Dashboard';
 import './App.css';
 
 const App: React.FC = () => {
+  // Tab management
+  const [activeTab, setActiveTab] = useState<'board' | 'dashboard'>('board');
+  
   // Workspace management
   const [workspaces, setWorkspaces] = useLocalStorage<Workspace[]>(
     STORAGE_KEYS.WORKSPACES,
@@ -329,18 +333,43 @@ const App: React.FC = () => {
           <button onClick={() => window.location.reload()}>Retry</button>
         </div>
       )}
+
+      {/* Tab Navigation */}
+      <div className="main-tabs">
+        <button
+          className={`main-tab ${activeTab === 'board' ? 'active' : ''}`}
+          onClick={() => setActiveTab('board')}
+        >
+          📋 Board
+        </button>
+        <button
+          className={`main-tab ${activeTab === 'dashboard' ? 'active' : ''} ${currentWorkspace.type === 'local' ? 'disabled' : ''}`}
+          onClick={() => currentWorkspace.type === 'remote' && setActiveTab('dashboard')}
+          disabled={currentWorkspace.type === 'local'}
+          title={currentWorkspace.type === 'local' ? 'Dashboard is only available for remote workspaces' : ''}
+        >
+          🚀 Dashboard
+        </button>
+      </div>
       
-      <Board
-        tasks={tasks}
-        onTaskUpdate={handleTaskUpdate}
-        onTaskCreate={handleTaskCreate}
-        onTaskDelete={handleTaskDelete}
-        editingState={editingState}
-        onEditingStateChange={setEditingState}
-        onFileImport={handleFileImport}
-        onExport={handleExport}
-        currentWorkspace={currentWorkspace}
-      />
+      {/* Tab Content */}
+      {activeTab === 'board' ? (
+        <Board
+          tasks={tasks}
+          onTaskUpdate={handleTaskUpdate}
+          onTaskCreate={handleTaskCreate}
+          onTaskDelete={handleTaskDelete}
+          editingState={editingState}
+          onEditingStateChange={setEditingState}
+          onFileImport={handleFileImport}
+          onExport={handleExport}
+          currentWorkspace={currentWorkspace}
+        />
+      ) : (
+        <Dashboard
+          remoteClient={dataService?.getRemoteClient?.()}
+        />
+      )}
       
       {/* Auto-save indicator with accessibility and UX improvements */}
       <div 

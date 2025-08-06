@@ -80,6 +80,8 @@
 
     "html-webpack-plugin": "^5.0.0",
 
+    "identity-obj-proxy": "^3.0.0",
+
     "jest": "^30.0.5",
 
     "jest-environment-jsdom": "^30.0.5",

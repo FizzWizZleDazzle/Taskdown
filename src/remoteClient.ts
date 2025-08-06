@@ -1,4 +1,17 @@
-import { Task, AuthConfig, ConnectionStatus } from './types';
+import { 
+  Task, 
+  AuthConfig, 
+  ConnectionStatus, 
+  AnalyticsSummary, 
+  BurndownData, 
+  User, 
+  CreateUserRequest, 
+  Activity, 
+  ActivityResponse, 
+  WorkspaceConfig, 
+  HealthStatus,
+  TaskQueryParams
+} from './types';
 
 export interface ApiResponse<T = any> {
   success: boolean;
@@ -28,6 +41,8 @@ export interface AuthVerificationResult {
 export interface TaskSyncResult {
   tasks: Task[];
   lastSync: string;
+  totalCount?: number;
+  hasMore?: boolean;
 }
 
 export interface BulkOperation {
@@ -60,7 +75,7 @@ export interface IRemoteWorkspaceClient {
   getWorkspaceInfo(): Promise<WorkspaceInfo>;
   
   // Task operations
-  getTasks(lastSync?: Date): Promise<TaskSyncResult>;
+  getTasks(params?: TaskQueryParams): Promise<TaskSyncResult>;
   createTask(task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>): Promise<Task>;
   updateTask(taskId: string, updates: Partial<Task>): Promise<Task>;
   deleteTask(taskId: string): Promise<void>;
@@ -72,8 +87,29 @@ export interface IRemoteWorkspaceClient {
   importMarkdown(markdown: string, options?: { overwrite?: boolean; preserveIds?: boolean }): Promise<{ imported: number; updated: number; errors: string[] }>;
   exportMarkdown(): Promise<{ markdown: string; filename: string }>;
   
-  // Health check
-  checkHealth(): Promise<{ status: string; version: string; uptime: number; connections: number }>;
+  // Analytics and Reporting
+  getAnalyticsSummary(): Promise<AnalyticsSummary>;
+  getBurndownData(sprint: string): Promise<BurndownData>;
+  
+  // User Management
+  getUsers(): Promise<User[]>;
+  createUser(user: CreateUserRequest): Promise<User>;
+  
+  // Activity and Audit Log
+  getActivity(params?: { 
+    limit?: number; 
+    offset?: number; 
+    userId?: string; 
+    taskId?: string; 
+    action?: string; 
+  }): Promise<ActivityResponse>;
+  
+  // Configuration and Settings
+  getConfig(): Promise<WorkspaceConfig>;
+  updateConfig(config: Partial<WorkspaceConfig>): Promise<void>;
+  
+  // Enhanced Health check
+  checkHealth(): Promise<HealthStatus>;
 }
 
 /**
@@ -258,13 +294,37 @@ export class HttpRemoteWorkspaceClient implements IRemoteWorkspaceClient {
     throw new Error(response.error?.message || 'Failed to get workspace info');
   }
 
-  async getTasks(lastSync?: Date): Promise<TaskSyncResult> {
-    const params = new URLSearchParams();
-    if (lastSync) {
-      params.set('lastSync', lastSync.toISOString());
+  async getTasks(params?: TaskQueryParams): Promise<TaskSyncResult> {
+    const urlParams = new URLSearchParams();
+    
+    if (params) {
+      if (params.lastSync) {
+        urlParams.set('lastSync', params.lastSync);
+      }
+      if (params.epic) {
+        urlParams.set('epic', params.epic);
+      }
+      if (params.status) {
+        urlParams.set('status', params.status);
+      }
+      if (params.assignee) {
+        urlParams.set('assignee', params.assignee);
+      }
+      if (params.limit) {
+        urlParams.set('limit', params.limit.toString());
+      }
+      if (params.offset) {
+        urlParams.set('offset', params.offset.toString());
+      }
+      if (params.sort) {
+        urlParams.set('sort', params.sort);
+      }
+      if (params.search) {
+        urlParams.set('search', params.search);
+      }
     }
     
-    const endpoint = `/api/tasks${params.toString() ? `?${params.toString()}` : ''}`;
+    const endpoint = `/api/tasks${urlParams.toString() ? `?${urlParams.toString()}` : ''}`;
     const response = await this.makeRequest<TaskSyncResult>(endpoint);
     
     if (response.success && response.data) {
@@ -358,13 +418,119 @@ export class HttpRemoteWorkspaceClient implements IRemoteWorkspaceClient {
     throw new Error(response.error?.message || 'Failed to export markdown');
   }
 
-  async checkHealth(): Promise<{ status: string; version: string; uptime: number; connections: number }> {
-    const response = await this.makeRequest<{ status: string; version: string; uptime: number; connections: number }>('/api/health');
+  async checkHealth(): Promise<HealthStatus> {
+    const response = await this.makeRequest<HealthStatus>('/api/health');
 
     if (response.success && response.data) {
       return response.data;
     }
 
     throw new Error(response.error?.message || 'Failed to check health');
+  }
+
+  // Analytics and Reporting
+  async getAnalyticsSummary(): Promise<AnalyticsSummary> {
+    const response = await this.makeRequest<AnalyticsSummary>('/api/analytics/summary');
+
+    if (response.success && response.data) {
+      return response.data;
+    }
+
+    throw new Error(response.error?.message || 'Failed to get analytics summary');
+  }
+
+  async getBurndownData(sprint: string): Promise<BurndownData> {
+    const params = new URLSearchParams({ sprint });
+    const response = await this.makeRequest<BurndownData>(`/api/analytics/burndown?${params.toString()}`);
+
+    if (response.success && response.data) {
+      return response.data;
+    }
+
+    throw new Error(response.error?.message || 'Failed to get burndown data');
+  }
+
+  // User Management
+  async getUsers(): Promise<User[]> {
+    const response = await this.makeRequest<{ users: User[] }>('/api/users');
+
+    if (response.success && response.data) {
+      return response.data.users;
+    }
+
+    throw new Error(response.error?.message || 'Failed to get users');
+  }
+
+  async createUser(user: CreateUserRequest): Promise<User> {
+    const response = await this.makeRequest<User>('/api/users', {
+      method: 'POST',
+      body: JSON.stringify(user)
+    });
+
+    if (response.success && response.data) {
+      return response.data;
+    }
+
+    throw new Error(response.error?.message || 'Failed to create user');
+  }
+
+  // Activity and Audit Log
+  async getActivity(params?: { 
+    limit?: number; 
+    offset?: number; 
+    userId?: string; 
+    taskId?: string; 
+    action?: string; 
+  }): Promise<ActivityResponse> {
+    const urlParams = new URLSearchParams();
+    
+    if (params) {
+      if (params.limit) {
+        urlParams.set('limit', params.limit.toString());
+      }
+      if (params.offset) {
+        urlParams.set('offset', params.offset.toString());
+      }
+      if (params.userId) {
+        urlParams.set('userId', params.userId);
+      }
+      if (params.taskId) {
+        urlParams.set('taskId', params.taskId);
+      }
+      if (params.action) {
+        urlParams.set('action', params.action);
+      }
+    }
+
+    const endpoint = `/api/activity${urlParams.toString() ? `?${urlParams.toString()}` : ''}`;
+    const response = await this.makeRequest<ActivityResponse>(endpoint);
+
+    if (response.success && response.data) {
+      return response.data;
+    }
+
+    throw new Error(response.error?.message || 'Failed to get activity');
+  }
+
+  // Configuration and Settings
+  async getConfig(): Promise<WorkspaceConfig> {
+    const response = await this.makeRequest<WorkspaceConfig>('/api/config');
+
+    if (response.success && response.data) {
+      return response.data;
+    }
+
+    throw new Error(response.error?.message || 'Failed to get config');
+  }
+
+  async updateConfig(config: Partial<WorkspaceConfig>): Promise<void> {
+    const response = await this.makeRequest('/api/config', {
+      method: 'PUT',
+      body: JSON.stringify(config)
+    });
+
+    if (!response.success) {
+      throw new Error(response.error?.message || 'Failed to update config');
+    }
   }
 }

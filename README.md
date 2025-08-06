@@ -16,6 +16,8 @@ Visit the live application: [https://FizzWizZleDazzle.github.io/Taskdown](https:
 - `src/serializer.ts` - Serializer for converting back to Markdown
 - `src/components/` - React components for the board UI
 - `src/cli.ts` - Command-line interface for parsing operations
+- `backend/` - Rust backend server implementing Remote Workspace API
+- `cloudflare-backend/` - Cloudflare Workers implementation of the backend
 
 ## Quick Start
 

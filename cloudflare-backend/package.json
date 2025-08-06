@@ -1,0 +1,34 @@
+{
+  "name": "taskdown-cloudflare-backend",
+  "version": "0.1.0",
+  "description": "Cloudflare Workers backend for Taskdown",
+  "main": "build/worker.js",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "deploy:staging": "wrangler deploy --env staging",
+    "deploy:production": "wrangler deploy --env production",
+    "build": "worker-build --release",
+    "fmt": "cargo fmt",
+    "lint": "cargo clippy",
+    "tail": "wrangler tail",
+    "tail:staging": "wrangler tail --env staging",
+    "tail:production": "wrangler tail --env production",
+    "db:create": "wrangler d1 create taskdown-db",
+    "db:migrate": "wrangler d1 execute taskdown-db --file schema.sql",
+    "db:query": "wrangler d1 execute taskdown-db --command"
+  },
+  "keywords": [
+    "taskdown",
+    "cloudflare",
+    "workers",
+    "rust",
+    "d1",
+    "serverless"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "wrangler": "^3.0.0"
+  }
+}

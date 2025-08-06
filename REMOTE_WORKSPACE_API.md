@@ -104,6 +104,10 @@ Retrieve all tasks in the workspace.
 - `epic`: Filter by epic ID
 - `status`: Filter by status
 - `assignee`: Filter by assignee
+- `limit`: Maximum number of tasks to return (for pagination)
+- `offset`: Number of tasks to skip (for pagination)
+- `sort`: Sort field and direction (e.g., `updatedAt:desc`, `priority:asc`)
+- `search`: Full-text search query
 
 **Response:**
 ```json
@@ -144,7 +148,9 @@ Retrieve all tasks in the workspace.
         "updatedAt": "ISO8601 datetime"
       }
     ],
-    "lastSync": "ISO8601 datetime"
+    "lastSync": "ISO8601 datetime",
+    "totalCount": number,
+    "hasMore": boolean
   }
 }
 ```
@@ -322,7 +328,182 @@ Real-time synchronization for collaborative editing.
 }
 ```
 
-### 7. Health & Status
+### 7. Analytics & Reporting
+
+#### GET `/api/analytics/summary`
+Get workspace analytics and summary statistics.
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "totalTasks": number,
+    "tasksByStatus": {
+      "Todo": number,
+      "In Progress": number,
+      "In Review": number,
+      "Done": number
+    },
+    "tasksByType": {
+      "Epic": number,
+      "Story": number,
+      "Task": number,
+      "Bug": number
+    },
+    "tasksByPriority": {
+      "Critical": number,
+      "High": number,
+      "Medium": number,
+      "Low": number
+    },
+    "averageStoryPoints": number,
+    "completionRate": number,
+    "activeSprints": ["string"],
+    "lastUpdated": "ISO8601 datetime"
+  }
+}
+```
+
+#### GET `/api/analytics/burndown`
+Get burndown chart data for a sprint.
+
+**Query Parameters:**
+- `sprint`: Sprint identifier (required)
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "sprint": "string",
+    "startDate": "ISO8601 date",
+    "endDate": "ISO8601 date",
+    "totalStoryPoints": number,
+    "dailyData": [
+      {
+        "date": "ISO8601 date",
+        "remainingPoints": number,
+        "completedPoints": number,
+        "idealRemaining": number
+      }
+    ]
+  }
+}
+```
+
+### 8. User Management (Optional)
+
+#### GET `/api/users`
+Get list of users in the workspace.
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "users": [
+      {
+        "id": "string",
+        "username": "string",
+        "displayName": "string",
+        "email": "string",
+        "role": "admin" | "user" | "viewer",
+        "avatar": "string",
+        "isActive": boolean,
+        "lastSeen": "ISO8601 datetime"
+      }
+    ]
+  }
+}
+```
+
+#### POST `/api/users`
+Create a new user (admin only).
+
+**Request:**
+```json
+{
+  "username": "string",
+  "displayName": "string", 
+  "email": "string",
+  "role": "admin" | "user" | "viewer",
+  "password": "string"
+}
+```
+
+### 9. Activity & Audit Log
+
+#### GET `/api/activity`
+Get activity log for the workspace.
+
+**Query Parameters:**
+- `limit`: Maximum number of entries (default: 50)
+- `offset`: Number of entries to skip
+- `userId`: Filter by user ID
+- `taskId`: Filter by task ID
+- `action`: Filter by action type
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "activities": [
+      {
+        "id": "string",
+        "userId": "string",
+        "userName": "string",
+        "action": "created" | "updated" | "deleted" | "moved" | "assigned",
+        "targetType": "task" | "user" | "workspace",
+        "targetId": "string",
+        "targetName": "string",
+        "details": {
+          "field": "string",
+          "oldValue": "any",
+          "newValue": "any"
+        },
+        "timestamp": "ISO8601 datetime"
+      }
+    ],
+    "totalCount": number,
+    "hasMore": boolean
+  }
+}
+```
+
+### 10. Configuration & Settings
+
+#### GET `/api/config`
+Get workspace configuration.
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "workspaceName": "string",
+    "timezone": "string",
+    "dateFormat": "string",
+    "features": {
+      "realtime": boolean,
+      "analytics": boolean,
+      "webhooks": boolean,
+      "customFields": boolean
+    },
+    "limits": {
+      "maxTasks": number,
+      "maxUsers": number,
+      "apiRateLimit": number
+    }
+  }
+}
+```
+
+#### PUT `/api/config`
+Update workspace configuration (admin only).
+
+### 11. Health & Status
 
 #### GET `/api/health`
 Check server health and status.
@@ -335,7 +516,16 @@ Check server health and status.
     "status": "healthy" | "degraded" | "unhealthy",
     "version": "string",
     "uptime": number,
-    "connections": number
+    "connections": number,
+    "database": {
+      "status": "connected" | "disconnected",
+      "responseTime": number
+    },
+    "memory": {
+      "used": number,
+      "total": number,
+      "percentage": number
+    }
   }
 }
 ```
@@ -353,6 +543,10 @@ Common error codes that should be handled:
 - `SERVER_ERROR`: Internal server error
 - `RATE_LIMITED`: Too many requests
 - `WORKSPACE_UNAVAILABLE`: Workspace temporarily unavailable
+- `CONFLICT`: Resource conflict (e.g., concurrent updates)
+- `QUOTA_EXCEEDED`: Workspace limits exceeded
+- `DEPENDENCY_ERROR`: Task dependency violation
+- `INVALID_TRANSITION`: Invalid status transition
 
 ## Implementation Notes
 
@@ -363,6 +557,11 @@ Common error codes that should be handled:
 5. **CORS**: Ensure proper CORS headers for browser-based clients
 6. **Compression**: Support gzip compression for large responses
 7. **Pagination**: For large datasets, implement pagination on GET endpoints
+8. **Webhooks**: Consider implementing webhooks for external integrations
+9. **Backup/Restore**: Provide endpoints for workspace backup and restoration
+10. **Custom Fields**: Support for custom task fields and metadata
+11. **File Attachments**: Handle file uploads and attachments for tasks
+12. **Time Tracking**: Support time logging and tracking features
 
 ## Security Considerations
 
@@ -372,3 +571,7 @@ Common error codes that should be handled:
 4. **XSS Prevention**: Sanitize user input
 5. **CSRF Protection**: Implement CSRF tokens if using cookie-based authentication
 6. **Rate Limiting**: Prevent brute force and DoS attacks
+7. **Data Encryption**: Encrypt sensitive data at rest
+8. **Audit Logging**: Log all API access and modifications
+9. **Content Security Policy**: Implement CSP headers
+10. **API Versioning**: Version your API to maintain backward compatibility

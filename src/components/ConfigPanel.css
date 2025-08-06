@@ -1,0 +1,322 @@
+.config-panel-container {
+  padding: 20px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin: 20px 0;
+}
+
+.config-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.config-panel-title {
+  margin: 0;
+  color: #333;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.changes-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #ff9800;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.changes-dot {
+  font-size: 20px;
+}
+
+.config-panel-no-remote {
+  text-align: center;
+  color: #666;
+  font-style: italic;
+  padding: 40px 0;
+}
+
+.config-panel-loading {
+  text-align: center;
+  color: #666;
+  padding: 40px 0;
+}
+
+.config-panel-error {
+  background: #ffebee;
+  border: 1px solid #ffcdd2;
+  border-radius: 4px;
+  padding: 15px;
+  margin-bottom: 20px;
+  text-align: center;
+  color: #d32f2f;
+}
+
+.config-panel-error.inline {
+  margin-bottom: 20px;
+}
+
+.config-panel-error h3 {
+  margin: 0 0 10px 0;
+}
+
+.retry-button {
+  background: #d32f2f;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+.retry-button:hover {
+  background: #b71c1c;
+}
+
+.config-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  margin-bottom: 30px;
+}
+
+.config-section {
+  background: #fafafa;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.section-title {
+  margin: 0 0 20px 0;
+  color: #333;
+  font-size: 18px;
+  font-weight: 600;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.config-group {
+  margin-bottom: 20px;
+}
+
+.config-group label {
+  display: block;
+  margin-bottom: 6px;
+  color: #333;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.config-group input,
+.config-group select {
+  width: 100%;
+  max-width: 300px;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  background: white;
+}
+
+.config-group input:focus,
+.config-group select:focus {
+  outline: none;
+  border-color: #1976d2;
+  box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2);
+}
+
+.config-group small {
+  display: block;
+  margin-top: 4px;
+  color: #666;
+  font-size: 12px;
+}
+
+.feature-toggles {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.feature-toggle {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 16px;
+}
+
+.toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  margin: 0;
+}
+
+.toggle-label input[type="checkbox"] {
+  display: none;
+}
+
+.toggle-slider {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  background: #ccc;
+  border-radius: 12px;
+  transition: background 0.2s ease;
+  flex-shrink: 0;
+}
+
+.toggle-slider::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.toggle-label input[type="checkbox"]:checked + .toggle-slider {
+  background: #1976d2;
+}
+
+.toggle-label input[type="checkbox"]:checked + .toggle-slider::before {
+  transform: translateX(20px);
+}
+
+.toggle-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.toggle-name {
+  font-weight: 500;
+  color: #333;
+  font-size: 14px;
+}
+
+.toggle-description {
+  color: #666;
+  font-size: 12px;
+}
+
+.config-panel-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  padding: 20px 0;
+  border-top: 1px solid #e0e0e0;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.reset-button {
+  background: #f5f5f5;
+  color: #666;
+  border: 1px solid #ddd;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.reset-button:hover:not(:disabled) {
+  background: #eeeeee;
+}
+
+.save-button {
+  background: #1976d2;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.save-button:hover:not(:disabled) {
+  background: #1565c0;
+}
+
+.reset-button:disabled,
+.save-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.config-panel-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 20px;
+}
+
+.refresh-button {
+  background: #1976d2;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.refresh-button:hover:not(:disabled) {
+  background: #1565c0;
+}
+
+.refresh-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .config-panel-header {
+    flex-direction: column;
+    gap: 10px;
+    align-items: stretch;
+    text-align: center;
+  }
+  
+  .config-group input,
+  .config-group select {
+    max-width: none;
+  }
+  
+  .toggle-label {
+    flex-direction: column;
+    text-align: center;
+    gap: 8px;
+  }
+  
+  .config-panel-actions {
+    flex-direction: column-reverse;
+    gap: 10px;
+  }
+  
+  .reset-button,
+  .save-button {
+    justify-content: center;
+  }
+}

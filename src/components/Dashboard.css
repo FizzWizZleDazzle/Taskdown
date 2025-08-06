@@ -1,0 +1,163 @@
+.dashboard-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.dashboard-container {
+  max-width: 1200px;
+  width: 90%;
+  max-height: 90%;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: slideIn 0.2s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.dashboard-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid #e9ecef;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f8f9fa;
+}
+
+.dashboard-title {
+  margin: 0;
+  color: #333;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.dashboard-close {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: #666;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.dashboard-close:hover {
+  background: #e9ecef;
+  color: #333;
+}
+
+.dashboard-notice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 6px;
+  padding: 12px 20px;
+  color: #856404;
+  font-size: 14px;
+}
+
+.notice-icon {
+  font-size: 16px;
+}
+
+.dashboard-tabs {
+  display: flex;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.dashboard-tab {
+  flex: 1;
+  background: #f8f9fa;
+  border: none;
+  padding: 16px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-right: 1px solid #e9ecef;
+}
+
+.dashboard-tab:last-child {
+  border-right: none;
+}
+
+.dashboard-tab:hover:not(:disabled) {
+  background: #e9ecef;
+  color: #333;
+}
+
+.dashboard-tab.active {
+  background: #1976d2;
+  color: white;
+}
+
+.dashboard-tab.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.dashboard-content {
+  min-height: 500px;
+}
+
+@media (max-width: 768px) {
+  .dashboard-container {
+    padding: 10px;
+  }
+  
+  .dashboard-title {
+    font-size: 24px;
+  }
+  
+  .dashboard-tabs {
+    flex-direction: column;
+  }
+  
+  .dashboard-tab {
+    border-right: none;
+    border-bottom: 1px solid #e9ecef;
+  }
+  
+  .dashboard-tab:last-child {
+    border-bottom: none;
+  }
+}

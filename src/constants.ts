@@ -81,6 +81,7 @@ export const DEFAULT_WORKSPACE = {
   id: 'DEFAULT',
   name: 'Default Workspace',
   description: 'Your default workspace',
+  type: 'local' as const,
   createdAt: new Date(),
   updatedAt: new Date()
 };

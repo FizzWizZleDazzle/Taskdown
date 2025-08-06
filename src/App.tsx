@@ -22,7 +22,15 @@ const App: React.FC = () => {
     DEFAULT_WORKSPACE.id
   );
   
-  const currentWorkspace = workspaces.find(w => w.id === currentWorkspaceId) || workspaces[0];
+  // Ensure workspace has type field (migration for old data)
+  const validatedWorkspaces = workspaces.map(w => ({
+    ...w,
+    type: w.type || 'local' as const,
+    createdAt: w.createdAt instanceof Date ? w.createdAt : new Date(w.createdAt),
+    updatedAt: w.updatedAt instanceof Date ? w.updatedAt : new Date(w.updatedAt)
+  }));
+  
+  const currentWorkspace = validatedWorkspaces.find(w => w.id === currentWorkspaceId) || validatedWorkspaces[0];
   
   // Data service for current workspace
   const [dataService, setDataService] = useState<IWorkspaceDataService | null>(null);
@@ -259,15 +267,15 @@ const App: React.FC = () => {
       updatedAt: new Date()
     };
     
-    setWorkspaces([...workspaces, newWorkspace]);
+    setWorkspaces([...validatedWorkspaces, newWorkspace]);
     handleWorkspaceChange(newWorkspace);
   };
 
   const handleWorkspaceDelete = (workspaceId: string) => {
-    if (workspaces.length <= 1) return;
+    if (validatedWorkspaces.length <= 1) return;
     
     // Remove workspace
-    const updatedWorkspaces = workspaces.filter(w => w.id !== workspaceId);
+    const updatedWorkspaces = validatedWorkspaces.filter(w => w.id !== workspaceId);
     setWorkspaces(updatedWorkspaces);
     
     // Clear local tasks for deleted workspace (only affects local workspaces)
@@ -280,7 +288,7 @@ const App: React.FC = () => {
   };
 
   const handleWorkspaceEdit = (updatedWorkspace: Workspace) => {
-    setWorkspaces(workspaces.map(w => 
+    setWorkspaces(validatedWorkspaces.map(w => 
       w.id === updatedWorkspace.id 
         ? { ...updatedWorkspace, updatedAt: new Date() }
         : w
@@ -307,7 +315,7 @@ const App: React.FC = () => {
   return (
     <div className="app">
       <WorkspaceSwitcher
-        workspaces={workspaces}
+        workspaces={validatedWorkspaces}
         currentWorkspace={currentWorkspace}
         onWorkspaceChange={handleWorkspaceChange}
         onWorkspaceCreate={handleWorkspaceCreate}

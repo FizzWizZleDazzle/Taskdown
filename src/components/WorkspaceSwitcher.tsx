@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Workspace, WorkspaceType, AuthConfig } from '../types';
 import './WorkspaceSwitcher.css';
 
@@ -22,6 +23,9 @@ const WorkspaceSwitcher: React.FC<WorkspaceSwitcherProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   
   // Form state for creating/editing workspaces
   const [formData, setFormData] = useState({
@@ -37,6 +41,42 @@ const WorkspaceSwitcher: React.FC<WorkspaceSwitcherProps> = ({
     timeout: 10000,
     retryAttempts: 3
   });
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      const dropdownEl = document.querySelector('.workspace-dropdown');
+      
+      if (dropdownRef.current && 
+          !dropdownRef.current.contains(target) && 
+          (!dropdownEl || !dropdownEl.contains(target))) {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen]);
+
+  const updatePosition = () => {
+    if (triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      setDropdownPosition({
+        top: rect.bottom + window.scrollY + 4,
+        left: rect.left + window.scrollX,
+        width: Math.max(rect.width, 320)
+      });
+    }
+  };
+
+  const handleToggle = () => {
+    if (!isOpen) {
+      updatePosition();
+    }
+    setIsOpen(!isOpen);
+  };
 
   const resetForm = () => {
     setFormData({
@@ -176,19 +216,46 @@ const WorkspaceSwitcher: React.FC<WorkspaceSwitcherProps> = ({
   };
 
   return (
-    <div className="workspace-switcher">
-      <button 
-        className="workspace-button"
-        onClick={() => setIsOpen(!isOpen)}
-        aria-label="Switch workspace"
-      >
-        <span className="workspace-icon">{getConnectionStatusIcon(currentWorkspace)}</span>
-        <span className="workspace-name">{currentWorkspace.name}</span>
-        <span className="workspace-arrow">{isOpen ? '▲' : '▼'}</span>
-      </button>
+    <>
+      <div ref={dropdownRef} className={`workspace-switcher ${isOpen ? 'open' : ''}`}>
+        <button
+          ref={triggerRef}
+          type="button"
+          className="workspace-trigger"
+          onClick={handleToggle}
+          aria-haspopup="listbox"
+          aria-expanded={isOpen}
+          aria-label="Switch workspace"
+        >
+          <span className="workspace-value">
+            <span className="workspace-icon">{getConnectionStatusIcon(currentWorkspace)}</span>
+            <span className="workspace-name">{currentWorkspace.name}</span>
+          </span>
+          <span className={`workspace-arrow ${isOpen ? 'up' : 'down'}`}>
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+              <path 
+                stroke="currentColor" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                strokeWidth="1.5" 
+                d="M6 8l4 4 4-4"
+              />
+            </svg>
+          </span>
+        </button>
+      </div>
 
-      {isOpen && (
-        <div className="workspace-dropdown">
+      {isOpen && createPortal(
+        <div 
+          className="workspace-dropdown workspace-portal"
+          style={{
+            position: 'fixed',
+            top: dropdownPosition.top,
+            left: dropdownPosition.left,
+            width: dropdownPosition.width,
+            zIndex: 999999
+          }}
+        >
           <div className="workspace-list">
             {workspaces.map(workspace => (
               <div key={workspace.id} className="workspace-item">
@@ -296,7 +363,10 @@ const WorkspaceSwitcher: React.FC<WorkspaceSwitcherProps> = ({
                     </div>
                     <div className="workspace-actions">
                       <button 
-                        onClick={() => startEdit(workspace)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          startEdit(workspace);
+                        }}
                         aria-label="Edit workspace"
                         title="Edit workspace"
                       >
@@ -304,7 +374,10 @@ const WorkspaceSwitcher: React.FC<WorkspaceSwitcherProps> = ({
                       </button>
                       {workspaces.length > 1 && (
                         <button 
-                          onClick={() => handleDeleteWorkspace(workspace.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteWorkspace(workspace.id);
+                          }}
                           aria-label="Delete workspace"
                           title="Delete workspace"
                         >
@@ -437,9 +510,10 @@ const WorkspaceSwitcher: React.FC<WorkspaceSwitcherProps> = ({
               + New Workspace
             </button>
           )}
-        </div>
+        </div>,
+        document.body
       )}
-    </div>
+    </>
   );
 };
 

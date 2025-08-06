@@ -9,7 +9,9 @@ A Cloudflare Workers implementation of the Taskdown backend API, built with Rust
 - **Scalable**: Automatically scales based on demand
 - **Database**: Uses Cloudflare D1 (SQLite-compatible) for data storage
 - **API Compatible**: Implements the same Remote Workspace API as the main backend
-- **CORS Enabled**: Configured for seamless frontend integration
+- **Real Authentication**: JWT-based session management with multiple auth methods
+- **Secure CORS**: Environment-based origins configuration from file
+- **Permission System**: Role-based access control for API endpoints
 
 ## Architecture
 
@@ -107,42 +109,48 @@ wrangler d1 execute taskdown-db --file schema.sql
 
 ## API Endpoints
 
-The Cloudflare backend implements all endpoints from the Remote Workspace API:
+The Cloudflare backend implements all endpoints from the Remote Workspace API with authentication required for most endpoints.
+
+### Authentication Required
+
+All endpoints except health check and authentication endpoints require a valid session token in the `Authorization: Bearer <token>` header.
+
+**See [AUTHENTICATION.md](./AUTHENTICATION.md) for detailed authentication setup and usage.**
 
 ### Core Endpoints
-- `GET /api/health` - Health check
-- `POST /api/auth/verify` - Authentication verification
-- `GET /api/auth/status` - Authentication status
-- `GET /api/workspace` - Workspace information
+- `GET /api/health` - Health check (no auth required)
+- `POST /api/auth/verify` - Authentication verification (no auth required)
+- `GET /api/auth/status` - Authentication status (no auth required)
+- `GET /api/workspace` - Workspace information (requires: read)
 
 ### Task Management
-- `GET /api/tasks` - List tasks (with filtering)
-- `POST /api/tasks` - Create new task
-- `GET /api/tasks/:id` - Get specific task
-- `PUT /api/tasks/:id` - Update task
-- `DELETE /api/tasks/:id` - Delete task
-- `POST /api/tasks/bulk` - Bulk operations
+- `GET /api/tasks` - List tasks with filtering (requires: read)
+- `POST /api/tasks` - Create new task (requires: write)
+- `GET /api/tasks/:id` - Get specific task (requires: read)
+- `PUT /api/tasks/:id` - Update task (requires: write)
+- `DELETE /api/tasks/:id` - Delete task (requires: write)
+- `POST /api/tasks/bulk` - Bulk operations (requires: write)
 
 ### Import/Export
-- `POST /api/import/markdown` - Import from Markdown
-- `GET /api/export/markdown` - Export to Markdown
+- `POST /api/import/markdown` - Import from Markdown (requires: write)
+- `GET /api/export/markdown` - Export to Markdown (requires: read)
 
 ### Analytics
-- `GET /api/analytics/summary` - Analytics summary
-- `GET /api/analytics/burndown` - Burndown chart data
+- `GET /api/analytics/summary` - Analytics summary (requires: read)
+- `GET /api/analytics/burndown` - Burndown chart data (requires: read)
 
 ### User Management
-- `GET /api/users` - List users
-- `POST /api/users` - Create user
-- `PUT /api/users/:id` - Update user
-- `DELETE /api/users/:id` - Delete user
+- `GET /api/users` - List users (requires: admin)
+- `POST /api/users` - Create user (requires: admin)
+- `PUT /api/users/:id` - Update user (requires: admin)
+- `DELETE /api/users/:id` - Delete user (requires: admin)
 
 ### Configuration
-- `GET /api/config` - Get workspace configuration
-- `PUT /api/config` - Update configuration
+- `GET /api/config` - Get workspace configuration (requires: read)
+- `PUT /api/config` - Update configuration (requires: admin)
 
 ### Activity Logging
-- `GET /api/activity` - Get activity log
+- `GET /api/activity` - Get activity log (requires: read)
 
 ## Database Schema
 
@@ -322,13 +330,25 @@ wrangler config
 wrangler validate
 ```
 
-## Security
+## Security and Configuration
+
+### Authentication and CORS
+
+- **Real Authentication**: JWT-based session management with username/password and API key support
+- **Permission System**: Role-based access control (read, write, admin)
+- **Secure CORS**: Environment-based origins loaded from configuration file
+- **Session Management**: 24-hour session expiration with proper token validation
+
+For detailed authentication setup, see [AUTHENTICATION.md](./AUTHENTICATION.md).
+
+### Production Security
 
 - **Authentication**: Implement proper auth verification for production
-- **Rate Limiting**: Consider adding rate limiting for public APIs
+- **Rate Limiting**: Consider adding rate limiting for public APIs  
 - **Input Validation**: All inputs are validated and sanitized
 - **SQL Injection**: Uses parameterized queries to prevent SQL injection
-- **CORS**: Configured for secure cross-origin requests
+- **CORS**: Configured for secure cross-origin requests with file-based origins
+- **Environment Variables**: Store secrets in Cloudflare environment variables
 
 ## Contributing
 

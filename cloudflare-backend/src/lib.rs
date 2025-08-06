@@ -3,8 +3,11 @@ use worker::*;
 mod models;
 mod handlers;
 mod database;
+mod config;
+mod auth;
 
 use handlers::*;
+use config::load_cors_origins;
 
 #[event(fetch)]
 async fn fetch(req: Request, env: Env, _ctx: Context) -> Result<Response> {
@@ -53,21 +56,28 @@ async fn fetch(req: Request, env: Env, _ctx: Context) -> Result<Response> {
         .put_async("/api/config", config_update_handler)
         
         // Handle CORS preflight requests
-        .options("/*", |_req, _ctx| {
+        .options("/*", |_req, ctx| {
             Response::empty()
                 .unwrap()
-                .with_cors(&cors_headers())
+                .with_cors(&cors_headers(&ctx.env))
         })
         
         // Default handler
-        .run(req, env)
+        .run(req, env.clone())
         .await?
-        .with_cors(&cors_headers())
+        .with_cors(&cors_headers(&env))
 }
 
-fn cors_headers() -> Cors {
+fn cors_headers(env: &Env) -> Cors {
+    let environment = env.var("ENVIRONMENT")
+        .map(|v| v.to_string())
+        .unwrap_or_else(|_| "development".to_string());
+    
+    let origins = load_cors_origins();
+    let allowed_origins = origins.get_origins_for_env(&environment);
+    
     Cors::new()
-        .with_origins(vec!["*"])
+        .with_origins(allowed_origins)
         .with_methods(vec![Method::Get, Method::Post, Method::Put, Method::Delete, Method::Options])
         .with_allowed_headers(vec!["Content-Type", "Authorization"])
 }

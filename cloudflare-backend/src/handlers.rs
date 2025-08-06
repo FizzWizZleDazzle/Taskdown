@@ -1,6 +1,8 @@
 use worker::*;
 use crate::models::*;
 use crate::database::Database;
+use crate::auth::{AuthService, Claims};
+use crate::config::{get_auth_config};
 use chrono::Utc;
 
 // Health check handler
@@ -26,28 +28,86 @@ pub async fn health_handler(_: Request, _ctx: RouteContext<()>) -> Result<Respon
 
 // Authentication handlers
 pub async fn auth_verify_handler(mut req: Request, _ctx: RouteContext<()>) -> Result<Response> {
-    let _request: AuthRequest = req.json().await?;
+    let auth_request: AuthRequest = req.json().await?;
+    let auth_config = get_auth_config();
+    let auth_service = AuthService::new(auth_config);
     
-    // Simple authentication - in real implementation, verify credentials
-    let auth_response = AuthResponse {
-        authenticated: true,
-        session_token: Some("dummy-session-token".to_string()),
-        expires_at: Some(Utc::now() + chrono::Duration::hours(24)),
-        permissions: vec!["read".to_string(), "write".to_string(), "admin".to_string()],
+    // Verify credentials based on type
+    let authenticated = match auth_request.credentials.r#type.as_str() {
+        "password" => {
+            if let (Some(username), Some(password)) = (&auth_request.credentials.username, &auth_request.credentials.password) {
+                auth_service.verify_credentials(username, password)
+            } else {
+                false
+            }
+        }
+        "api_key" => {
+            if let Some(token) = &auth_request.credentials.token {
+                auth_service.verify_api_key(token)
+            } else {
+                false
+            }
+        }
+        _ => false,
     };
 
-    Response::from_json(&ApiResponse::success(auth_response))
+    if authenticated {
+        let username = auth_request.credentials.username.unwrap_or_else(|| "api_user".to_string());
+        let user_id = format!("user_{}", username);
+        let session_token = auth_service.create_session_token(user_id, username.clone());
+        let permissions = if username == "admin" {
+            vec!["read".to_string(), "write".to_string(), "admin".to_string()]
+        } else {
+            vec!["read".to_string(), "write".to_string()]
+        };
+
+        let auth_response = AuthResponse {
+            authenticated: true,
+            session_token: Some(session_token),
+            expires_at: Some(Utc::now() + chrono::Duration::hours(24)),
+            permissions,
+        };
+
+        Response::from_json(&ApiResponse::success(auth_response))
+    } else {
+        Response::from_json(&ApiResponse::<()>::error(
+            "INVALID_CREDENTIALS".to_string(),
+            "Invalid username/password or API key".to_string(),
+        ))
+    }
 }
 
-pub async fn auth_status_handler(_: Request, _ctx: RouteContext<()>) -> Result<Response> {
-    let auth_response = AuthResponse {
-        authenticated: true,
-        session_token: Some("dummy-session-token".to_string()),
-        expires_at: Some(Utc::now() + chrono::Duration::hours(24)),
-        permissions: vec!["read".to_string(), "write".to_string(), "admin".to_string()],
-    };
-
-    Response::from_json(&ApiResponse::success(auth_response))
+pub async fn auth_status_handler(req: Request, _ctx: RouteContext<()>) -> Result<Response> {
+    let auth_config = get_auth_config();
+    let auth_service = AuthService::new(auth_config);
+    
+    if let Some(token) = auth_service.extract_auth_header(&req) {
+        match auth_service.verify_session_token(&token) {
+            Ok(claims) => {
+                let auth_response = AuthResponse {
+                    authenticated: true,
+                    session_token: Some(token),
+                    expires_at: Some(chrono::DateTime::from_timestamp(claims.exp, 0).unwrap_or_else(|| Utc::now())),
+                    permissions: claims.permissions,
+                };
+                Response::from_json(&ApiResponse::success(auth_response))
+            }
+            Err(e) => {
+                Response::from_json(&ApiResponse::<()>::error(
+                    "INVALID_SESSION".to_string(),
+                    e.to_string(),
+                ))
+            }
+        }
+    } else {
+        let auth_response = AuthResponse {
+            authenticated: false,
+            session_token: None,
+            expires_at: None,
+            permissions: vec![],
+        };
+        Response::from_json(&ApiResponse::success(auth_response))
+    }
 }
 
 // Workspace handlers
@@ -83,6 +143,25 @@ pub async fn workspace_info_handler(_: Request, _ctx: RouteContext<()>) -> Resul
 
 // Task handlers
 pub async fn tasks_list_handler(req: Request, ctx: RouteContext<()>) -> Result<Response> {
+    // Authenticate request
+    let claims = match authenticate_request(&req) {
+        Ok(claims) => claims,
+        Err(_) => {
+            return Response::from_json(&ApiResponse::<()>::error(
+                "UNAUTHORIZED".to_string(),
+                "Authentication required".to_string(),
+            ));
+        }
+    };
+
+    // Check read permission
+    if let Err(_) = require_permission(&claims, "read") {
+        return Response::from_json(&ApiResponse::<()>::error(
+            "FORBIDDEN".to_string(),
+            "Read permission required".to_string(),
+        ));
+    }
+
     let url = req.url()?;
     let query_params = url.query_pairs().collect::<std::collections::HashMap<_, _>>();
     
@@ -108,6 +187,25 @@ pub async fn tasks_list_handler(req: Request, ctx: RouteContext<()>) -> Result<R
 }
 
 pub async fn tasks_create_handler(mut req: Request, ctx: RouteContext<()>) -> Result<Response> {
+    // Authenticate request
+    let claims = match authenticate_request(&req) {
+        Ok(claims) => claims,
+        Err(_) => {
+            return Response::from_json(&ApiResponse::<()>::error(
+                "UNAUTHORIZED".to_string(),
+                "Authentication required".to_string(),
+            ));
+        }
+    };
+
+    // Check write permission
+    if let Err(_) = require_permission(&claims, "write") {
+        return Response::from_json(&ApiResponse::<()>::error(
+            "FORBIDDEN".to_string(),
+            "Write permission required".to_string(),
+        ));
+    }
+
     let create_request: CreateTaskRequest = match req.json().await {
         Ok(req) => req,
         Err(e) => {
@@ -386,4 +484,28 @@ fn get_database(_ctx: &RouteContext<()>) -> Result<Database> {
     // For now, return a simple database instance
     // In a real implementation, you would get the D1 database from context
     Ok(Database::new())
+}
+
+// Helper function to authenticate request
+fn authenticate_request(req: &Request) -> std::result::Result<Claims, String> {
+    let auth_config = get_auth_config();
+    let auth_service = AuthService::new(auth_config);
+    
+    if let Some(token) = auth_service.extract_auth_header(req) {
+        auth_service.verify_session_token(&token)
+    } else {
+        Err("No authorization header found".to_string())
+    }
+}
+
+// Helper function to check permissions
+fn require_permission(claims: &Claims, permission: &str) -> std::result::Result<(), String> {
+    let auth_config = get_auth_config();
+    let auth_service = AuthService::new(auth_config);
+    
+    if auth_service.require_permission(claims, permission) {
+        Ok(())
+    } else {
+        Err(format!("Permission '{}' required", permission))
+    }
 }

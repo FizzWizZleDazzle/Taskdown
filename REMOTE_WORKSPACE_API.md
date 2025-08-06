@@ -43,7 +43,17 @@ Get workspace metadata and connection information.
     "description": "string",
     "serverVersion": "string",
     "capabilities": ["sync", "realtime", "auth"],
-    "lastUpdated": "ISO8601 datetime"
+    "lastUpdated": "ISO8601 datetime",
+    "owner": {
+      "id": "string",
+      "username": "string",
+      "displayName": "string"
+    },
+    "permissions": {
+      "canManageUsers": boolean,
+      "canModifySettings": boolean,
+      "canViewAnalytics": boolean
+    }
   }
 }
 ```
@@ -419,7 +429,7 @@ Get list of users in the workspace.
 ```
 
 #### POST `/api/users`
-Create a new user (admin only).
+Create a new user (admin or owner only).
 
 **Request:**
 ```json
@@ -429,6 +439,40 @@ Create a new user (admin only).
   "email": "string",
   "role": "admin" | "user" | "viewer",
   "password": "string"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "string",
+    "username": "string",
+    "displayName": "string",
+    "email": "string",
+    "role": "admin" | "user" | "viewer",
+    "isActive": true,
+    "createdAt": "ISO8601 datetime"
+  }
+}
+```
+
+#### PUT `/api/users/:id`
+Update an existing user (admin or owner only).
+
+**Request:** Same as POST `/api/users` but all fields optional
+
+#### DELETE `/api/users/:id`
+Delete a user (admin or owner only).
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "deleted": true
+  }
 }
 ```
 
@@ -501,7 +545,9 @@ Get workspace configuration.
 ```
 
 #### PUT `/api/config`
-Update workspace configuration (admin only).
+Update workspace configuration (admin or owner only).
+
+**Request:** Same as GET `/api/config` response format but all fields optional
 
 ### 11. Health & Status
 

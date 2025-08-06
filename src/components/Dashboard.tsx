@@ -8,11 +8,12 @@ import './Dashboard.css';
 
 interface DashboardProps {
   remoteClient?: IRemoteWorkspaceClient;
+  onClose?: () => void;
 }
 
 type DashboardTab = 'analytics' | 'users' | 'activity' | 'config';
 
-export const Dashboard: React.FC<DashboardProps> = ({ remoteClient }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ remoteClient, onClose }) => {
   const [activeTab, setActiveTab] = useState<DashboardTab>('analytics');
 
   const tabs = [
@@ -25,16 +26,22 @@ export const Dashboard: React.FC<DashboardProps> = ({ remoteClient }) => {
   const ActiveComponent = tabs.find(tab => tab.id === activeTab)?.component || Analytics;
 
   return (
-    <div className="dashboard-container">
-      <div className="dashboard-header">
-        <h1 className="dashboard-title">🚀 Workspace Dashboard</h1>
-        {!remoteClient && (
-          <div className="dashboard-notice">
-            <span className="notice-icon">ℹ️</span>
-            <span>Dashboard features are only available for remote workspaces.</span>
-          </div>
-        )}
-      </div>
+    <div className="dashboard-modal-overlay" onClick={onClose}>
+      <div className="dashboard-container" onClick={(e) => e.stopPropagation()}>
+        <div className="dashboard-header">
+          <h1 className="dashboard-title">⚙️ Workspace Settings</h1>
+          {onClose && (
+            <button className="dashboard-close" onClick={onClose} aria-label="Close settings">
+              ✕
+            </button>
+          )}
+          {!remoteClient && (
+            <div className="dashboard-notice">
+              <span className="notice-icon">ℹ️</span>
+              <span>Settings are only available for remote workspaces.</span>
+            </div>
+          )}
+        </div>
 
       <div className="dashboard-tabs">
         {tabs.map(tab => (
@@ -49,8 +56,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ remoteClient }) => {
         ))}
       </div>
 
-      <div className="dashboard-content">
-        <ActiveComponent remoteClient={remoteClient} />
+        <div className="dashboard-content">
+          <ActiveComponent remoteClient={remoteClient} />
+        </div>
       </div>
     </div>
   );

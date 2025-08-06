@@ -43,6 +43,7 @@ interface BoardProps {
   onFileImport: (file: File) => void;
   onExport: () => void;
   currentWorkspace?: Workspace;
+  onShowSettings?: () => void;
 }
 
 interface DroppableColumnProps {
@@ -117,7 +118,8 @@ const Board: React.FC<BoardProps> = ({
   onEditingStateChange,
   onFileImport,
   onExport,
-  currentWorkspace
+  currentWorkspace,
+  onShowSettings
 }) => {
   const [columnType, setColumnType] = useState<ColumnType>(COLUMN_TYPES.STATUS);
   const [searchAndFilter, setSearchAndFilter] = useState<SearchAndFilterState>(defaultSearchAndFilterState);
@@ -432,6 +434,17 @@ const Board: React.FC<BoardProps> = ({
                 💾 Export
               </button>
             </div>
+            
+            {currentWorkspace?.type === 'remote' && onShowSettings && (
+              <button 
+                className="settings-icon" 
+                onClick={onShowSettings}
+                aria-label="Workspace settings"
+                title="Manage users and workspace settings"
+              >
+                ⚙️
+              </button>
+            )}
             
             <button 
               className="add-task-btn" 

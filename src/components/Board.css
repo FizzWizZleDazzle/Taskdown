@@ -147,6 +147,28 @@
 }
 
 
+.settings-icon {
+  background: #6b7280;
+  color: white;
+  border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.settings-icon:hover {
+  background: #4b5563;
+  transform: rotate(45deg);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+}
+
 .add-task-btn {
   background: linear-gradient(135deg, #0f4c75 0%, #20b2aa 100%);
   color: white;

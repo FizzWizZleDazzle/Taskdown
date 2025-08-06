@@ -12,8 +12,8 @@ import { Dashboard } from './components/Dashboard';
 import './App.css';
 
 const App: React.FC = () => {
-  // Tab management
-  const [activeTab, setActiveTab] = useState<'board' | 'dashboard'>('board');
+  // Settings panel management
+  const [showSettings, setShowSettings] = useState(false);
   
   // Workspace management
   const [workspaces, setWorkspaces] = useLocalStorage<Workspace[]>(
@@ -334,40 +334,24 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* Tab Navigation */}
-      <div className="main-tabs">
-        <button
-          className={`main-tab ${activeTab === 'board' ? 'active' : ''}`}
-          onClick={() => setActiveTab('board')}
-        >
-          📋 Board
-        </button>
-        <button
-          className={`main-tab ${activeTab === 'dashboard' ? 'active' : ''} ${currentWorkspace.type === 'local' ? 'disabled' : ''}`}
-          onClick={() => currentWorkspace.type === 'remote' && setActiveTab('dashboard')}
-          disabled={currentWorkspace.type === 'local'}
-          title={currentWorkspace.type === 'local' ? 'Dashboard is only available for remote workspaces' : ''}
-        >
-          🚀 Dashboard
-        </button>
-      </div>
+      <Board
+        tasks={tasks}
+        onTaskUpdate={handleTaskUpdate}
+        onTaskCreate={handleTaskCreate}
+        onTaskDelete={handleTaskDelete}
+        editingState={editingState}
+        onEditingStateChange={setEditingState}
+        onFileImport={handleFileImport}
+        onExport={handleExport}
+        currentWorkspace={currentWorkspace}
+        onShowSettings={() => setShowSettings(true)}
+      />
       
-      {/* Tab Content */}
-      {activeTab === 'board' ? (
-        <Board
-          tasks={tasks}
-          onTaskUpdate={handleTaskUpdate}
-          onTaskCreate={handleTaskCreate}
-          onTaskDelete={handleTaskDelete}
-          editingState={editingState}
-          onEditingStateChange={setEditingState}
-          onFileImport={handleFileImport}
-          onExport={handleExport}
-          currentWorkspace={currentWorkspace}
-        />
-      ) : (
+      {/* Settings Modal for Remote Workspaces */}
+      {showSettings && currentWorkspace.type === 'remote' && (
         <Dashboard
           remoteClient={dataService?.getRemoteClient?.()}
+          onClose={() => setShowSettings(false)}
         />
       )}
       

@@ -5,6 +5,7 @@ import { useLocalStorage } from './hooks/useLocalStorage';
 import { MarkdownParser } from './parser';
 import { MarkdownSerializer } from './serializer';
 import { tasksToBoard, boardToTasks } from './converters';
+import { createWorkspaceDataService, IWorkspaceDataService } from './workspaceService';
 import Board from './components/Board';
 import WorkspaceSwitcher from './components/WorkspaceSwitcher';
 import './App.css';
@@ -23,11 +24,11 @@ const App: React.FC = () => {
   
   const currentWorkspace = workspaces.find(w => w.id === currentWorkspaceId) || workspaces[0];
   
-  // Use workspace-specific storage for tasks
-  const [tasks, setTasks] = useLocalStorage<Task[]>(
-    STORAGE_KEYS.WORKSPACE_TASKS(currentWorkspace.id),
-    [] // Start with empty tasks for all workspaces
-  );
+  // Data service for current workspace
+  const [dataService, setDataService] = useState<IWorkspaceDataService | null>(null);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
   
   // State for board-level editing state
   const [editingState, setEditingState] = useState({
@@ -35,6 +36,70 @@ const App: React.FC = () => {
     selectedTaskId: null as string | null,
     isCreating: false
   });
+
+  // Initialize data service when workspace changes
+  useEffect(() => {
+    const initializeWorkspace = async () => {
+      setIsLoading(true);
+      setConnectionError(null);
+      
+      try {
+        const service = createWorkspaceDataService(currentWorkspace);
+        setDataService(service);
+        
+        // Connect to workspace (for remote workspaces)
+        if (service.isRemote()) {
+          await service.connect();
+        }
+        
+        // Load tasks
+        const workspaceTasks = await service.getTasks();
+        setTasks(workspaceTasks);
+        
+        // Update workspace connection status if it's remote
+        if (service.isRemote()) {
+          const status = service.getConnectionStatus();
+          setWorkspaces(prev => prev.map(w => 
+            w.id === currentWorkspace.id 
+              ? { ...w, connectionStatus: status }
+              : w
+          ));
+        }
+      } catch (error) {
+        console.error('Error initializing workspace:', error);
+        setConnectionError((error as Error).message);
+        
+        // Update connection status for remote workspaces
+        if (currentWorkspace.type === 'remote') {
+          setWorkspaces(prev => prev.map(w => 
+            w.id === currentWorkspace.id 
+              ? { 
+                  ...w, 
+                  connectionStatus: { 
+                    connected: false, 
+                    authenticated: false, 
+                    error: (error as Error).message 
+                  } 
+                }
+              : w
+          ));
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initializeWorkspace();
+  }, [currentWorkspace.id]);
+
+  // Cleanup data service on unmount
+  useEffect(() => {
+    return () => {
+      if (dataService?.isRemote()) {
+        dataService.disconnect();
+      }
+    };
+  }, [dataService]);
 
   const generateId = () => {
     // Get the highest number for current workspace
@@ -48,30 +113,47 @@ const App: React.FC = () => {
     return `${currentWorkspace.id}-${nextNumber}`;
   };
 
-  const handleTaskUpdate = (updatedTask: Task, originalId?: string) => {
-    setTasks(prevTasks => {
-      const idToUpdate = originalId || updatedTask.id;
-      const updatedTasks = prevTasks.map(task =>
-        task.id === idToUpdate ? { ...updatedTask, updatedAt: new Date() } : task
+  const handleTaskUpdate = async (updatedTask: Task, originalId?: string) => {
+    if (!dataService) return;
+    
+    try {
+      const taskId = originalId || updatedTask.id;
+      const result = await dataService.updateTask(taskId, updatedTask);
+      
+      setTasks(prevTasks => 
+        prevTasks.map(task =>
+          task.id === taskId ? result : task
+        )
       );
-      return updatedTasks;
-    });
+    } catch (error) {
+      console.error('Error updating task:', error);
+      alert(`Failed to update task: ${(error as Error).message}`);
+    }
   };
 
-  const handleTaskCreate = (taskData: Task | Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => {
-    const newTask: Task = {
-      ...taskData,
-      id: 'id' in taskData ? taskData.id : generateId(),
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    setTasks(prevTasks => [...prevTasks, newTask]);
+  const handleTaskCreate = async (taskData: Task | Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => {
+    if (!dataService) return;
+    
+    try {
+      const newTask = await dataService.createTask(taskData as Omit<Task, 'id' | 'createdAt' | 'updatedAt'>);
+      setTasks(prevTasks => [...prevTasks, newTask]);
+    } catch (error) {
+      console.error('Error creating task:', error);
+      alert(`Failed to create task: ${(error as Error).message}`);
+    }
   };
 
-  const handleTaskDelete = (taskId: string) => {
-    setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
+  const handleTaskDelete = async (taskId: string) => {
+    if (!dataService) return;
+    
+    try {
+      await dataService.deleteTask(taskId);
+      setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
+    } catch (error) {
+      console.error('Error deleting task:', error);
+      alert(`Failed to delete task: ${(error as Error).message}`);
+    }
   };
-
 
   // Auto-save indicator with debounced updates for better UX
   const [lastSaved, setLastSaved] = useState<Date>(new Date());
@@ -88,15 +170,27 @@ const App: React.FC = () => {
     return () => clearTimeout(saveTimer);
   }, [tasks]);
 
-  const handleFileImport = (file: File) => {
+  const handleFileImport = async (file: File) => {
+    if (!dataService) return;
+    
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
         const markdown = e.target?.result as string;
-        const parser = new MarkdownParser();
-        const boardData = parser.parse(markdown);
-        const importedTasks = boardToTasks(boardData);
-        setTasks(importedTasks);
+        
+        // Use remote import if available, otherwise parse and set locally
+        if (dataService.isRemote() && dataService.importMarkdown) {
+          await dataService.importMarkdown(markdown);
+          // Reload tasks after import
+          const updatedTasks = await dataService.getTasks();
+          setTasks(updatedTasks);
+        } else {
+          const parser = new MarkdownParser();
+          const boardData = parser.parse(markdown);
+          const importedTasks = boardToTasks(boardData);
+          await dataService.setTasks(importedTasks);
+          setTasks(importedTasks);
+        }
       } catch (error) {
         console.error('Error importing file:', error);
         alert('Error importing file. Please check that the file is valid Markdown.');
@@ -105,22 +199,40 @@ const App: React.FC = () => {
     reader.readAsText(file);
   };
 
-  const handleExport = () => {
+  const handleExport = async () => {
+    if (!dataService) return;
+    
     try {
-      const boardData = tasksToBoard(tasks, `${currentWorkspace.name} - Taskdown Board`);
-      const serializer = new MarkdownSerializer();
-      const markdown = serializer.serialize(boardData);
-      
-      // Create and trigger download
-      const blob = new Blob([markdown], { type: 'text/markdown' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `taskdown-${currentWorkspace.id.toLowerCase()}.md`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      // Use remote export if available, otherwise serialize locally
+      if (dataService.isRemote() && dataService.exportMarkdown) {
+        const result = await dataService.exportMarkdown();
+        
+        // Create and trigger download
+        const blob = new Blob([result.markdown], { type: 'text/markdown' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = result.filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      } else {
+        const boardData = tasksToBoard(tasks, `${currentWorkspace.name} - Taskdown Board`);
+        const serializer = new MarkdownSerializer();
+        const markdown = serializer.serialize(boardData);
+        
+        // Create and trigger download
+        const blob = new Blob([markdown], { type: 'text/markdown' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `taskdown-${currentWorkspace.id.toLowerCase()}.md`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
     } catch (error) {
       console.error('Error exporting file:', error);
       alert('Error exporting file. Please try again.');
@@ -130,8 +242,7 @@ const App: React.FC = () => {
   // Workspace management functions
   const handleWorkspaceChange = (workspace: Workspace) => {
     setCurrentWorkspaceId(workspace.id);
-    // Tasks will automatically reload due to the useLocalStorage hook with new key
-    window.location.reload(); // Reload to ensure clean state switch
+    // Data service and tasks will automatically reload due to the useEffect hook
   };
 
   const handleWorkspaceCreate = (workspaceData: Omit<Workspace, 'id' | 'createdAt' | 'updatedAt'>) => {
@@ -159,7 +270,7 @@ const App: React.FC = () => {
     const updatedWorkspaces = workspaces.filter(w => w.id !== workspaceId);
     setWorkspaces(updatedWorkspaces);
     
-    // Clear tasks for deleted workspace
+    // Clear local tasks for deleted workspace (only affects local workspaces)
     localStorage.removeItem(STORAGE_KEYS.WORKSPACE_TASKS(workspaceId));
     
     // Switch to first available workspace if current was deleted
@@ -174,7 +285,24 @@ const App: React.FC = () => {
         ? { ...updatedWorkspace, updatedAt: new Date() }
         : w
     ));
+    
+    // If editing current workspace, reload it
+    if (updatedWorkspace.id === currentWorkspaceId) {
+      // The useEffect will handle reloading the workspace
+      setCurrentWorkspaceId(updatedWorkspace.id);
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="app">
+        <div className="loading-screen">
+          <div className="loading-spinner"></div>
+          <p>Connecting to workspace...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="app">
@@ -186,6 +314,14 @@ const App: React.FC = () => {
         onWorkspaceDelete={handleWorkspaceDelete}
         onWorkspaceEdit={handleWorkspaceEdit}
       />
+      
+      {connectionError && (
+        <div className="connection-error">
+          <span>⚠️ Connection Error: {connectionError}</span>
+          <button onClick={() => window.location.reload()}>Retry</button>
+        </div>
+      )}
+      
       <Board
         tasks={tasks}
         onTaskUpdate={handleTaskUpdate}
@@ -197,6 +333,7 @@ const App: React.FC = () => {
         onExport={handleExport}
         currentWorkspace={currentWorkspace}
       />
+      
       {/* Auto-save indicator with accessibility and UX improvements */}
       <div 
         className="auto-save-indicator"

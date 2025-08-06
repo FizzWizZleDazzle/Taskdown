@@ -43,8 +43,8 @@
   position: absolute;
   top: calc(100% + 8px);
   left: 0;
-  min-width: 300px;
-  max-width: 400px;
+  min-width: 350px;
+  max-width: 450px;
   background: white;
   border: 1px solid #e2e8f0;
   border-radius: 12px;
@@ -60,7 +60,7 @@
 
 .workspace-item {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   padding: 12px 16px;
   border-bottom: 1px solid #edf2f7;
@@ -85,6 +85,7 @@
   align-items: center;
   gap: 8px;
   margin-bottom: 4px;
+  flex-wrap: wrap;
 }
 
 .workspace-id {
@@ -95,6 +96,24 @@
   padding: 2px 6px;
   border-radius: 4px;
   font-family: 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', monospace;
+}
+
+.workspace-type-badge {
+  font-size: 10px;
+  font-weight: 600;
+  color: white;
+  background: #6b7280;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.workspace-type-badge[data-type="remote"] {
+  background: #8b5cf6;
+}
+
+.workspace-type-badge[data-type="local"] {
+  background: #10b981;
 }
 
 .active-indicator {
@@ -118,9 +137,19 @@
   margin-top: 2px;
 }
 
+.workspace-status {
+  font-size: 11px;
+  color: #718096;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .workspace-actions {
   display: flex;
   gap: 4px;
+  margin-left: 8px;
 }
 
 .workspace-actions button {
@@ -159,19 +188,47 @@
 }
 
 .workspace-create-form input,
-.workspace-edit-form input {
+.workspace-edit-form input,
+.workspace-create-form select,
+.workspace-edit-form select,
+.workspace-create-form textarea,
+.workspace-edit-form textarea {
   width: 100%;
   padding: 8px 12px;
   margin-bottom: 8px;
   border: 1px solid #e2e8f0;
   border-radius: 6px;
   font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
 }
 
 .workspace-create-form input:focus,
-.workspace-edit-form input:focus {
+.workspace-edit-form input:focus,
+.workspace-create-form select:focus,
+.workspace-edit-form select:focus,
+.workspace-create-form textarea:focus,
+.workspace-edit-form textarea:focus {
   outline: none;
   border-color: #20b2aa;
+}
+
+.advanced-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.advanced-options label {
+  font-size: 12px;
+  color: #4a5568;
+  font-weight: 600;
+}
+
+.advanced-options input {
+  margin-top: 4px;
+  margin-bottom: 0;
 }
 
 .workspace-create-actions,

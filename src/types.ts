@@ -31,10 +31,38 @@ export interface Task {
 
 export type ColumnType = 'epic' | 'sprint' | 'status';
 
+export type WorkspaceType = 'local' | 'remote';
+
+export interface AuthConfig {
+  type: 'api-key' | 'basic' | 'bearer' | 'custom';
+  token?: string;
+  username?: string;
+  password?: string;
+  customHeaders?: Record<string, string>;
+}
+
+export interface RemoteConfig {
+  baseUrl: string;
+  authConfig?: AuthConfig;
+  timeout?: number;
+  retryAttempts?: number;
+}
+
+export interface ConnectionStatus {
+  connected: boolean;
+  authenticated: boolean;
+  lastSync?: Date;
+  error?: string;
+  serverVersion?: string;
+}
+
 export interface Workspace {
   id: string;
   name: string;
   description?: string;
+  type: WorkspaceType;
+  remoteConfig?: RemoteConfig;
+  connectionStatus?: ConnectionStatus;
   createdAt: Date;
   updatedAt: Date;
 }

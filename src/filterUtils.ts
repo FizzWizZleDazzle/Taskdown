@@ -33,7 +33,7 @@ export function filterTasks(tasks: Task[], searchAndFilter: SearchAndFilterState
 
     // Epic filter
     if (searchAndFilter.filterEpic !== 'All') {
-      if (!task.epic && searchAndFilter.filterEpic !== 'All') {
+      if (!task.epic) {
         return false;
       }
       if (task.epic !== searchAndFilter.filterEpic) {
@@ -43,7 +43,7 @@ export function filterTasks(tasks: Task[], searchAndFilter: SearchAndFilterState
 
     // Sprint filter
     if (searchAndFilter.filterSprint !== 'All') {
-      if (!task.sprint && searchAndFilter.filterSprint !== 'All') {
+      if (!task.sprint) {
         return false;
       }
       if (task.sprint !== searchAndFilter.filterSprint) {

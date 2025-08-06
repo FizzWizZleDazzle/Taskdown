@@ -18,6 +18,7 @@ import Card from './Card';
 import TaskModal from './TaskModal';
 import SearchAndFilter from './SearchAndFilter';
 import ConfirmDialog from './ConfirmDialog';
+import CustomDropdown from './CustomDropdown';
 import { SearchAndFilterState, defaultSearchAndFilterState } from '../types';
 import './Board.css';
 
@@ -389,16 +390,16 @@ const Board: React.FC<BoardProps> = ({
           <div className="board-controls">
             <div className="view-selector">
               <label htmlFor="column-type-select">Group by:</label>
-              <select 
+              <CustomDropdown
                 id="column-type-select"
-                value={columnType} 
-                onChange={(e) => setColumnType(e.target.value as ColumnType)}
-                aria-label="Select column grouping method"
-              >
-                <option value={COLUMN_TYPES.STATUS}>Status</option>
-                <option value={COLUMN_TYPES.EPIC}>Epic</option>
-                <option value={COLUMN_TYPES.SPRINT}>Sprint</option>
-              </select>
+                options={[
+                  { value: COLUMN_TYPES.STATUS, label: 'Status' },
+                  { value: COLUMN_TYPES.EPIC, label: 'Epic' },
+                  { value: COLUMN_TYPES.SPRINT, label: 'Sprint' }
+                ]}
+                value={columnType}
+                onChange={(value) => setColumnType(value as ColumnType)}
+              />
             </div>
             <button 
               className={`search-filter-toggle ${showSearchAndFilter ? 'active' : ''}`}

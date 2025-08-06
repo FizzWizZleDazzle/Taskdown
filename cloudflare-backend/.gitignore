@@ -1,0 +1,25 @@
+# Build artifacts
+/build/
+/target/
+
+# Dependencies
+/node_modules/
+
+# Environment files
+.env
+.env.local
+
+# IDE files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Wrangler
+.wrangler/
+worker/
+
+# Logs
+*.log

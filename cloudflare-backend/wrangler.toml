@@ -1,0 +1,22 @@
+name = "taskdown-cloudflare-backend"
+compatibility_date = "2024-01-01"
+main = "build/worker.js"
+
+[build]
+command = "cargo install -q worker-build && worker-build --release"
+
+[vars]
+ENVIRONMENT = "development"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "taskdown-db"
+database_id = "your-database-id-here"
+
+[env.production]
+vars = { ENVIRONMENT = "production" }
+
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "taskdown-db-prod"
+database_id = "your-prod-database-id-here"

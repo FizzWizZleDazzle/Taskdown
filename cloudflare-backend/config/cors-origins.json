@@ -1,0 +1,16 @@
+{
+  "development": [
+    "http://localhost:3000",
+    "http://localhost:8080",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:8080"
+  ],
+  "staging": [
+    "https://taskdown-staging.example.com",
+    "https://staging.taskdown.dev"
+  ],
+  "production": [
+    "https://taskdown.example.com",
+    "https://app.taskdown.dev"
+  ]
+}

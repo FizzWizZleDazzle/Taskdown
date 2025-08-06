@@ -133,3 +133,7 @@ jspm_packages/
 ehthumbs.db
 *~
 
+# Rust backend
+backend/target/
+backend/*.db
+backend/*.db-*

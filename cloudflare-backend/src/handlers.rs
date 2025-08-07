@@ -110,6 +110,281 @@ pub async fn auth_status_handler(req: Request, _ctx: RouteContext<()>) -> Result
     }
 }
 
+pub async fn auth_register_handler(mut req: Request, _ctx: RouteContext<()>) -> Result<Response> {
+    let register_request: RegisterRequest = req.json().await?;
+    
+    // For this implementation, we'll just validate the request and return success
+    // In a real system, you would store the user in a database
+    if register_request.username.trim().is_empty() || register_request.password.len() < 6 {
+        return Response::from_json(&ApiResponse::<()>::error(
+            "VALIDATION_ERROR".to_string(),
+            "Username is required and password must be at least 6 characters".to_string(),
+        ));
+    }
+
+    // Check if user already exists (hardcoded for demo)
+    if register_request.username == "admin" || register_request.username == "user" {
+        return Response::from_json(&ApiResponse::<()>::error(
+            "USER_EXISTS".to_string(),
+            "Username already exists".to_string(),
+        ));
+    }
+
+    let user = User {
+        id: format!("user_{}", register_request.username),
+        username: register_request.username.clone(),
+        display_name: register_request.display_name.clone().unwrap_or_else(|| register_request.username.clone()),
+        email: register_request.email.clone(),
+        role: "user".to_string(),
+        active: true,
+        created_at: Utc::now(),
+        updated_at: Utc::now(),
+    };
+
+    Response::from_json(&ApiResponse::success(user))
+}
+
+pub async fn registration_page_handler(req: Request, _ctx: RouteContext<()>) -> Result<Response> {
+    let host = req.headers()
+        .get("host")
+        .unwrap_or_default()
+        .unwrap_or_else(|| "localhost".to_string());
+    
+    let base_url = if host.contains("localhost") || host.contains("127.0.0.1") {
+        format!("http://{}", host)
+    } else {
+        format!("https://{}", host)
+    };
+
+    let html = format!(r#"<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Taskdown Backend Registration</title>
+    <style>
+        body {{
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }}
+        .container {{
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            max-width: 500px;
+            width: 100%;
+        }}
+        h1 {{
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }}
+        .form-group {{
+            margin-bottom: 20px;
+        }}
+        label {{
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 500;
+        }}
+        input {{
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e1e1;
+            border-radius: 6px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+            box-sizing: border-box;
+        }}
+        input:focus {{
+            outline: none;
+            border-color: #667eea;
+        }}
+        button {{
+            width: 100%;
+            padding: 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }}
+        button:hover {{
+            background: #5a6fd8;
+        }}
+        button:disabled {{
+            background: #ccc;
+            cursor: not-allowed;
+        }}
+        .info {{
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 6px;
+            margin-bottom: 30px;
+            border-left: 4px solid #667eea;
+        }}
+        .info h3 {{
+            margin-top: 0;
+            color: #333;
+        }}
+        .info p {{
+            margin-bottom: 10px;
+            color: #666;
+        }}
+        .demo-accounts {{
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 20px;
+            border-left: 4px solid #ffc107;
+        }}
+        .demo-accounts h4 {{
+            margin-top: 0;
+            color: #856404;
+        }}
+        .demo-accounts code {{
+            background: #f8f9fa;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+        }}
+        .result {{
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 6px;
+            display: none;
+        }}
+        .result.success {{
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }}
+        .result.error {{
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Taskdown Backend Registration</h1>
+        
+        <div class="info">
+            <h3>Welcome to the Taskdown Backend</h3>
+            <p><strong>Backend URL:</strong> <code>{base_url}</code></p>
+            <p>This is the registration page for the Taskdown backend running on this domain. Create an account to use this backend with the Taskdown frontend application.</p>
+        </div>
+
+        <form id="registrationForm">
+            <div class="form-group">
+                <label for="username">Username *</label>
+                <input type="text" id="username" name="username" required minlength="3" maxlength="50">
+            </div>
+            
+            <div class="form-group">
+                <label for="displayName">Display Name</label>
+                <input type="text" id="displayName" name="displayName" maxlength="100">
+            </div>
+            
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email">
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password *</label>
+                <input type="password" id="password" name="password" required minlength="6">
+            </div>
+            
+            <button type="submit" id="submitBtn">Create Account</button>
+        </form>
+
+        <div id="result" class="result"></div>
+
+        <div class="demo-accounts">
+            <h4>Demo Accounts Available</h4>
+            <p>For testing purposes, these demo accounts are available:</p>
+            <p><strong>Admin:</strong> <code>admin</code> / <code>admin123</code></p>
+            <p><strong>User:</strong> <code>user</code> / <code>user123</code></p>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('registrationForm').addEventListener('submit', async function(e) {{
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            const result = document.getElementById('result');
+            
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Creating Account...';
+            result.style.display = 'none';
+            
+            const formData = new FormData(e.target);
+            const data = {{
+                username: formData.get('username'),
+                display_name: formData.get('displayName') || null,
+                email: formData.get('email') || null,
+                password: formData.get('password')
+            }};
+            
+            try {{
+                const response = await fetch('{base_url}/api/auth/register', {{
+                    method: 'POST',
+                    headers: {{
+                        'Content-Type': 'application/json',
+                    }},
+                    body: JSON.stringify(data)
+                }});
+                
+                const responseData = await response.json();
+                
+                if (responseData.success) {{
+                    result.className = 'result success';
+                    result.innerHTML = `
+                        <h4>Account Created Successfully!</h4>
+                        <p><strong>Username:</strong> ${{data.username}}</p>
+                        <p><strong>Backend URL:</strong> {base_url}</p>
+                        <p>You can now use these credentials to connect to this backend from the Taskdown frontend application.</p>
+                    `;
+                    e.target.reset();
+                }} else {{
+                    result.className = 'result error';
+                    result.innerHTML = `
+                        <h4>Registration Failed</h4>
+                        <p>${{responseData.error?.message || 'Unknown error occurred'}}</p>
+                    `;
+                }}
+            }} catch (error) {{
+                result.className = 'result error';
+                result.innerHTML = `
+                    <h4>Registration Failed</h4>
+                    <p>Network error: ${{error.message}}</p>
+                `;
+            }}
+            
+            result.style.display = 'block';
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Create Account';
+        }});
+    </script>
+</body>
+</html>"#, base_url = base_url);
+
+    Response::from_html(html)
+}
+
 // Workspace handlers
 pub async fn workspace_info_handler(_: Request, _ctx: RouteContext<()>) -> Result<Response> {
     let workspace = WorkspaceInfo {

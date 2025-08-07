@@ -161,6 +161,14 @@ pub struct AuthResponse {
     pub permissions: Vec<String>,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct RegisterRequest {
+    pub username: String,
+    pub display_name: Option<String>,
+    pub email: Option<String>,
+    pub password: String,
+}
+
 // Workspace types
 #[derive(Debug, Serialize)]
 pub struct WorkspaceInfo {

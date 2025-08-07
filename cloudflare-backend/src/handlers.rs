@@ -4,6 +4,7 @@ use crate::database::Database;
 use crate::auth::{AuthService, Claims};
 use crate::config::{get_auth_config};
 use chrono::Utc;
+use uuid::Uuid;
 
 // Health check handler
 pub async fn health_handler(_: Request, _ctx: RouteContext<()>) -> Result<Response> {
@@ -110,18 +111,34 @@ pub async fn auth_status_handler(req: Request, _ctx: RouteContext<()>) -> Result
     }
 }
 
+// Helper function to validate password complexity
+fn is_password_complex(password: &str) -> bool {
+    if password.len() < 6 {
+        return false;
+    }
+    
+    let has_uppercase = password.chars().any(|c| c.is_uppercase());
+    let has_lowercase = password.chars().any(|c| c.is_lowercase());
+    let has_number = password.chars().any(|c| c.is_numeric());
+    let has_special = password.chars().any(|c| !c.is_alphanumeric());
+    
+    has_uppercase && has_lowercase && has_number && has_special
+}
+
 pub async fn auth_register_handler(mut req: Request, _ctx: RouteContext<()>) -> Result<Response> {
     let register_request: RegisterRequest = req.json().await?;
     
+    // TODO: Implement user persistence (store users in a database)
     // For this implementation, we'll just validate the request and return success
     // In a real system, you would store the user in a database
-    if register_request.username.trim().is_empty() || register_request.password.len() < 6 {
+    if register_request.username.trim().is_empty() || !is_password_complex(&register_request.password) {
         return Response::from_json(&ApiResponse::<()>::error(
             "VALIDATION_ERROR".to_string(),
-            "Username is required and password must be at least 6 characters".to_string(),
+            "Username is required and password must be at least 6 characters, including uppercase, lowercase, number, and special character.".to_string(),
         ));
     }
 
+    // TODO: Replace with proper database lookup
     // Check if user already exists (hardcoded for demo)
     if register_request.username == "admin" || register_request.username == "user" {
         return Response::from_json(&ApiResponse::<()>::error(
@@ -131,7 +148,7 @@ pub async fn auth_register_handler(mut req: Request, _ctx: RouteContext<()>) -> 
     }
 
     let user = User {
-        id: format!("user_{}", register_request.username),
+        id: Uuid::new_v4().to_string(),
         username: register_request.username.clone(),
         display_name: register_request.display_name.clone().unwrap_or_else(|| register_request.username.clone()),
         email: register_request.email.clone(),
@@ -156,231 +173,9 @@ pub async fn registration_page_handler(req: Request, _ctx: RouteContext<()>) -> 
         format!("https://{}", host)
     };
 
-    let html = format!(r#"<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Taskdown Backend Registration</title>
-    <style>
-        body {{
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }}
-        .container {{
-            background: white;
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
-            max-width: 500px;
-            width: 100%;
-        }}
-        h1 {{
-            color: #333;
-            text-align: center;
-            margin-bottom: 30px;
-        }}
-        .form-group {{
-            margin-bottom: 20px;
-        }}
-        label {{
-            display: block;
-            margin-bottom: 5px;
-            color: #555;
-            font-weight: 500;
-        }}
-        input {{
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #e1e1e1;
-            border-radius: 6px;
-            font-size: 16px;
-            transition: border-color 0.3s;
-            box-sizing: border-box;
-        }}
-        input:focus {{
-            outline: none;
-            border-color: #667eea;
-        }}
-        button {{
-            width: 100%;
-            padding: 12px;
-            background: #667eea;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-size: 16px;
-            cursor: pointer;
-            transition: background 0.3s;
-        }}
-        button:hover {{
-            background: #5a6fd8;
-        }}
-        button:disabled {{
-            background: #ccc;
-            cursor: not-allowed;
-        }}
-        .info {{
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 6px;
-            margin-bottom: 30px;
-            border-left: 4px solid #667eea;
-        }}
-        .info h3 {{
-            margin-top: 0;
-            color: #333;
-        }}
-        .info p {{
-            margin-bottom: 10px;
-            color: #666;
-        }}
-        .demo-accounts {{
-            background: #fff3cd;
-            padding: 15px;
-            border-radius: 6px;
-            margin-top: 20px;
-            border-left: 4px solid #ffc107;
-        }}
-        .demo-accounts h4 {{
-            margin-top: 0;
-            color: #856404;
-        }}
-        .demo-accounts code {{
-            background: #f8f9fa;
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-family: monospace;
-        }}
-        .result {{
-            margin-top: 20px;
-            padding: 15px;
-            border-radius: 6px;
-            display: none;
-        }}
-        .result.success {{
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }}
-        .result.error {{
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }}
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>🚀 Taskdown Backend Registration</h1>
-        
-        <div class="info">
-            <h3>Welcome to the Taskdown Backend</h3>
-            <p><strong>Backend URL:</strong> <code>{base_url}</code></p>
-            <p>This is the registration page for the Taskdown backend running on this domain. Create an account to use this backend with the Taskdown frontend application.</p>
-        </div>
-
-        <form id="registrationForm">
-            <div class="form-group">
-                <label for="username">Username *</label>
-                <input type="text" id="username" name="username" required minlength="3" maxlength="50">
-            </div>
-            
-            <div class="form-group">
-                <label for="displayName">Display Name</label>
-                <input type="text" id="displayName" name="displayName" maxlength="100">
-            </div>
-            
-            <div class="form-group">
-                <label for="email">Email</label>
-                <input type="email" id="email" name="email">
-            </div>
-            
-            <div class="form-group">
-                <label for="password">Password *</label>
-                <input type="password" id="password" name="password" required minlength="6">
-            </div>
-            
-            <button type="submit" id="submitBtn">Create Account</button>
-        </form>
-
-        <div id="result" class="result"></div>
-
-        <div class="demo-accounts">
-            <h4>Demo Accounts Available</h4>
-            <p>For testing purposes, these demo accounts are available:</p>
-            <p><strong>Admin:</strong> <code>admin</code> / <code>admin123</code></p>
-            <p><strong>User:</strong> <code>user</code> / <code>user123</code></p>
-        </div>
-    </div>
-
-    <script>
-        document.getElementById('registrationForm').addEventListener('submit', async function(e) {{
-            e.preventDefault();
-            
-            const submitBtn = document.getElementById('submitBtn');
-            const result = document.getElementById('result');
-            
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Creating Account...';
-            result.style.display = 'none';
-            
-            const formData = new FormData(e.target);
-            const data = {{
-                username: formData.get('username'),
-                display_name: formData.get('displayName') || null,
-                email: formData.get('email') || null,
-                password: formData.get('password')
-            }};
-            
-            try {{
-                const response = await fetch('{base_url}/api/auth/register', {{
-                    method: 'POST',
-                    headers: {{
-                        'Content-Type': 'application/json',
-                    }},
-                    body: JSON.stringify(data)
-                }});
-                
-                const responseData = await response.json();
-                
-                if (responseData.success) {{
-                    result.className = 'result success';
-                    result.innerHTML = `
-                        <h4>Account Created Successfully!</h4>
-                        <p><strong>Username:</strong> ${{data.username}}</p>
-                        <p><strong>Backend URL:</strong> {base_url}</p>
-                        <p>You can now use these credentials to connect to this backend from the Taskdown frontend application.</p>
-                    `;
-                    e.target.reset();
-                }} else {{
-                    result.className = 'result error';
-                    result.innerHTML = `
-                        <h4>Registration Failed</h4>
-                        <p>${{responseData.error?.message || 'Unknown error occurred'}}</p>
-                    `;
-                }}
-            }} catch (error) {{
-                result.className = 'result error';
-                result.innerHTML = `
-                    <h4>Registration Failed</h4>
-                    <p>Network error: ${{error.message}}</p>
-                `;
-            }}
-            
-            result.style.display = 'block';
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Create Account';
-        }});
-    </script>
-</body>
-</html>"#, base_url = base_url);
+    // Load HTML template from embedded resource
+    let html_template = include_str!("templates/registration.html");
+    let html = html_template.replace("{{BASE_URL}}", &base_url);
 
     Response::from_html(html)
 }

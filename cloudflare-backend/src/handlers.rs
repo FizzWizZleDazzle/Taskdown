@@ -3,7 +3,6 @@ use crate::models::*;
 use crate::database::Database;
 use crate::auth::{AuthService, Claims};
 use crate::config::{get_auth_config};
-use crate::ai::{get_ai_provider, AITaskGenerationRequest, AIAcceptanceCriteriaRequest, AIStoryPointEstimationRequest, AIDependencyAnalysisRequest, AISprintPlanningRequest};
 use chrono::Utc;
 use uuid::Uuid;
 

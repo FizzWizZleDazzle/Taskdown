@@ -206,7 +206,7 @@ impl OpenAIProvider {
     }
 
     async fn call_openai(&self, prompt: &str) -> Result<String> {
-        let mut headers = Headers::new();
+        let headers = Headers::new();
         headers.set("Authorization", &format!("Bearer {}", self.api_key))?;
         headers.set("Content-Type", "application/json")?;
 
@@ -222,7 +222,7 @@ impl OpenAIProvider {
             "temperature": 0.7
         });
 
-        let init = RequestInit::new();
+        let mut init = RequestInit::new();
         init.with_method(Method::Post);
         init.with_headers(headers);
         init.with_body(Some(body.to_string().into()));
@@ -230,7 +230,7 @@ impl OpenAIProvider {
         let request = Request::new_with_init(&self.endpoint, &init)?;
         let mut response = Fetch::Request(request).send().await?;
 
-        if !response.status_code() == 200 {
+        if response.status_code() != 200 {
             return Err(Error::from(format!("OpenAI API error: {}", response.status_code())));
         }
 

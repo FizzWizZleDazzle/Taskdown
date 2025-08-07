@@ -86,4 +86,34 @@ impl Database {
         // In a real implementation, you would delete from D1 here
         Ok(())
     }
+
+    pub async fn get_workspace_config(&self) -> Result<WorkspaceConfig> {
+        // Return a default config for now
+        // In a real implementation, you would query D1 here
+        Ok(WorkspaceConfig {
+            workspace_name: "Default Workspace".to_string(),
+            timezone: "UTC".to_string(),
+            date_format: "MM/DD/YYYY".to_string(),
+            features: WorkspaceFeatures {
+                realtime: false,
+                analytics: true,
+                webhooks: false,
+                custom_fields: false,
+                ai: false,
+            },
+            limits: WorkspaceLimits {
+                max_tasks: 1000,
+                max_users: 10,
+                api_rate_limit: 100,
+                ai_requests_per_day: Some(50),
+            },
+            ai: None,
+        })
+    }
+
+    pub async fn update_workspace_config(&self, _config: WorkspaceConfig) -> Result<()> {
+        // Return success
+        // In a real implementation, you would update D1 here
+        Ok(())
+    }
 }

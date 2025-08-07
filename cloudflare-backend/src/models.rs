@@ -26,11 +26,14 @@ impl<T> ApiResponse<T> {
         }
     }
 
-    pub fn error(code: String, message: String) -> Self {
+    pub fn error(code: &str, message: &str) -> Self {
         Self {
             success: false,
             data: None,
-            error: Some(ApiError { code, message }),
+            error: Some(ApiError { 
+                code: code.to_string(), 
+                message: message.to_string() 
+            }),
         }
     }
 }

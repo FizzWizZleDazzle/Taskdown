@@ -411,17 +411,21 @@ const WorkspaceSwitcher: React.FC<WorkspaceSwitcherProps> = ({
                 value={formData.type}
                 onChange={(e) => setFormData({ ...formData, type: e.target.value as WorkspaceType })}
               >
-                <option value="local">Local</option>
-                <option value="remote">Remote</option>
+                <option value="local">Local - Store data in browser</option>
+                <option value="remote">Remote - Connect to backend server</option>
               </select>
               
               {formData.type === 'remote' && (
                 <>
+                  <div className="remote-help-text">
+                    <p><strong>Connecting to Remote Backend:</strong></p>
+                    <p>Enter the backend URL below. If you don't have an account, visit <code>[backend-url]/register</code> to create one.</p>
+                  </div>
                   <input
                     type="text"
                     value={formData.baseUrl}
                     onChange={(e) => setFormData({ ...formData, baseUrl: e.target.value })}
-                    placeholder="Base URL (e.g., https://api.example.com)"
+                    placeholder="Backend URL (e.g., https://your-backend.workers.dev)"
                   />
                   
                   <select
@@ -503,12 +507,18 @@ const WorkspaceSwitcher: React.FC<WorkspaceSwitcherProps> = ({
               </div>
             </div>
           ) : (
-            <button 
-              className="workspace-create-button"
-              onClick={() => setIsCreating(true)}
-            >
-              + New Workspace
-            </button>
+            <div className="workspace-create-section">
+              <div className="create-help-text">
+                <p><strong>Create New Workspace:</strong> Create a local workspace or connect to a remote backend</p>
+                <p><small>For remote workspaces, you'll need the backend URL and credentials. Visit the backend's <code>/register</code> page to create an account.</small></p>
+              </div>
+              <button 
+                className="workspace-create-button"
+                onClick={() => setIsCreating(true)}
+              >
+                + Create/Connect Workspace
+              </button>
+            </div>
           )}
         </div>,
         document.body

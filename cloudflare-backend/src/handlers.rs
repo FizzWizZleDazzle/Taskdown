@@ -4,6 +4,7 @@ use crate::database::Database;
 use crate::auth::{AuthService, Claims};
 use crate::config::{get_auth_config};
 use chrono::Utc;
+use uuid::Uuid;
 
 // Health check handler
 pub async fn health_handler(_: Request, _ctx: RouteContext<()>) -> Result<Response> {
@@ -108,6 +109,75 @@ pub async fn auth_status_handler(req: Request, _ctx: RouteContext<()>) -> Result
         };
         Response::from_json(&ApiResponse::success(auth_response))
     }
+}
+
+// Helper function to validate password complexity
+fn is_password_complex(password: &str) -> bool {
+    if password.len() < 6 {
+        return false;
+    }
+    
+    let has_uppercase = password.chars().any(|c| c.is_uppercase());
+    let has_lowercase = password.chars().any(|c| c.is_lowercase());
+    let has_number = password.chars().any(|c| c.is_numeric());
+    let has_special = password.chars().any(|c| !c.is_alphanumeric());
+    
+    has_uppercase && has_lowercase && has_number && has_special
+}
+
+pub async fn auth_register_handler(mut req: Request, _ctx: RouteContext<()>) -> Result<Response> {
+    let register_request: RegisterRequest = req.json().await?;
+    
+    // TODO: Implement user persistence (store users in a database)
+    // For this implementation, we'll just validate the request and return success
+    // In a real system, you would store the user in a database
+    if register_request.username.trim().is_empty() || !is_password_complex(&register_request.password) {
+        return Response::from_json(&ApiResponse::<()>::error(
+            "VALIDATION_ERROR".to_string(),
+            "Username is required and password must be at least 6 characters, including uppercase, lowercase, number, and special character.".to_string(),
+        ));
+    }
+
+    // TODO: Replace with proper database lookup
+    // Check if user already exists (hardcoded for demo)
+    if register_request.username == "admin" || register_request.username == "user" {
+        return Response::from_json(&ApiResponse::<()>::error(
+            "USER_EXISTS".to_string(),
+            "Username already exists".to_string(),
+        ));
+    }
+
+    let user = User {
+        id: Uuid::new_v4().to_string(),
+        username: register_request.username.clone(),
+        display_name: register_request.display_name.clone().unwrap_or_else(|| register_request.username.clone()),
+        email: register_request.email.clone(),
+        role: "user".to_string(),
+        active: true,
+        created_at: Utc::now(),
+        updated_at: Utc::now(),
+    };
+
+    Response::from_json(&ApiResponse::success(user))
+}
+
+pub async fn registration_page_handler(req: Request, _ctx: RouteContext<()>) -> Result<Response> {
+    let host = req.headers()
+        .get("host")
+        .unwrap_or_default()
+        .unwrap_or_else(|| "localhost".to_string());
+    
+    let base_url = if host.contains("localhost") || host.contains("127.0.0.1") {
+        format!("http://{}", host)
+    } else {
+        format!("https://{}", host)
+    };
+
+    // Load HTML template from embedded resource
+    let html_template = include_str!("templates/registration.html");
+    let html = html_template.replace("{{BASE_URL}}", &base_url);
+
+    Response::from_html(html)
 }
 
 // Workspace handlers

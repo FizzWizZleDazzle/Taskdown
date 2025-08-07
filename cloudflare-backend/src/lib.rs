@@ -22,6 +22,10 @@ async fn fetch(req: Request, env: Env, _ctx: Context) -> Result<Response> {
         // Authentication endpoints
         .post_async("/api/auth/verify", auth_verify_handler)
         .get_async("/api/auth/status", auth_status_handler)
+        .post_async("/api/auth/register", auth_register_handler)
+        
+        // Registration page
+        .get_async("/register", registration_page_handler)
         
         // Workspace endpoints
         .get_async("/api/workspace", workspace_info_handler)

@@ -218,8 +218,7 @@ const App: React.FC = () => {
         }
       } catch (error) {
         console.error('Error importing file:', error);
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-        alert(`Error importing file: ${errorMessage}\n\nPlease check that the file contains valid Jira-style Markdown format.`);
+        alert('Error importing file. Please check that the file contains valid Jira-style Markdown format.');
       }
     };
     

@@ -36,7 +36,7 @@ const isMarkdownFile = (file: File): boolean => {
   
   // Accept file if it has a markdown extension, regardless of MIME type
   // Some systems don't properly detect .md files as text/markdown
-  return fileExtension || (mimeType && fileName.includes('.md'));
+  return fileExtension || (mimeType && (fileName.endsWith('.md') || fileName.endsWith('.markdown')));
 };
 
 interface EditingState {

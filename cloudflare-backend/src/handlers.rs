@@ -3,6 +3,7 @@ use crate::models::*;
 use crate::database::Database;
 use crate::auth::{AuthService, Claims};
 use crate::config::{get_auth_config};
+use crate::ai::{get_ai_provider, AITaskGenerationRequest, AIAcceptanceCriteriaRequest, AIStoryPointEstimationRequest, AIDependencyAnalysisRequest, AISprintPlanningRequest};
 use chrono::Utc;
 use uuid::Uuid;
 
@@ -578,4 +579,157 @@ fn require_permission(claims: &Claims, permission: &str) -> std::result::Result<
     } else {
         Err(format!("Permission '{}' required", permission))
     }
+}
+
+// AI Handlers
+pub async fn ai_generate_task_handler(mut req: Request, ctx: RouteContext<()>) -> Result<Response> {
+    // Authenticate user
+    let claims = match AuthService::from_request(&req, &ctx.env).await {
+        Ok(claims) => claims,
+        Err(_) => return Response::from_json(&ApiResponse::error("unauthorized", "Authentication required")),
+    };
+
+    // Check permissions
+    if let Err(err) = require_permission(&claims, "write") {
+        return Response::from_json(&ApiResponse::error("forbidden", &err));
+    }
+
+    // Get AI provider
+    let ai_provider = match get_ai_provider(&ctx.env).await? {
+        Some(provider) => provider,
+        None => return Response::from_json(&ApiResponse::error("ai_not_configured", "AI features are not configured")),
+    };
+
+    // Parse request
+    let request: AITaskGenerationRequest = match req.json().await {
+        Ok(req) => req,
+        Err(_) => return Response::from_json(&ApiResponse::error("invalid_request", "Invalid request body")),
+    };
+
+    // Generate task details
+    match ai_provider.generate_task_details(&request).await {
+        Ok(response) => Response::from_json(&ApiResponse::success(response)),
+        Err(e) => Response::from_json(&ApiResponse::error("ai_error", &format!("AI generation failed: {}", e))),
+    }
+}
+
+pub async fn ai_acceptance_criteria_handler(mut req: Request, ctx: RouteContext<()>) -> Result<Response> {
+    // Authenticate user
+    let claims = match AuthService::from_request(&req, &ctx.env).await {
+        Ok(claims) => claims,
+        Err(_) => return Response::from_json(&ApiResponse::error("unauthorized", "Authentication required")),
+    };
+
+    // Check permissions
+    if let Err(err) = require_permission(&claims, "write") {
+        return Response::from_json(&ApiResponse::error("forbidden", &err));
+    }
+
+    // Get AI provider
+    let ai_provider = match get_ai_provider(&ctx.env).await? {
+        Some(provider) => provider,
+        None => return Response::from_json(&ApiResponse::error("ai_not_configured", "AI features are not configured")),
+    };
+
+    // Parse request
+    let request: AIAcceptanceCriteriaRequest = match req.json().await {
+        Ok(req) => req,
+        Err(_) => return Response::from_json(&ApiResponse::error("invalid_request", "Invalid request body")),
+    };
+
+    // Generate acceptance criteria
+    match ai_provider.generate_acceptance_criteria(&request).await {
+        Ok(response) => Response::from_json(&ApiResponse::success(response)),
+        Err(e) => Response::from_json(&ApiResponse::error("ai_error", &format!("AI generation failed: {}", e))),
+    }
+}
+
+pub async fn ai_estimate_story_points_handler(mut req: Request, ctx: RouteContext<()>) -> Result<Response> {
+    // Authenticate user
+    let claims = match AuthService::from_request(&req, &ctx.env).await {
+        Ok(claims) => claims,
+        Err(_) => return Response::from_json(&ApiResponse::error("unauthorized", "Authentication required")),
+    };
+
+    // Check permissions
+    if let Err(err) = require_permission(&claims, "write") {
+        return Response::from_json(&ApiResponse::error("forbidden", &err));
+    }
+
+    // Get AI provider
+    let ai_provider = match get_ai_provider(&ctx.env).await? {
+        Some(provider) => provider,
+        None => return Response::from_json(&ApiResponse::error("ai_not_configured", "AI features are not configured")),
+    };
+
+    // Parse request
+    let request: AIStoryPointEstimationRequest = match req.json().await {
+        Ok(req) => req,
+        Err(_) => return Response::from_json(&ApiResponse::error("invalid_request", "Invalid request body")),
+    };
+
+    // Estimate story points
+    match ai_provider.estimate_story_points(&request).await {
+        Ok(response) => Response::from_json(&ApiResponse::success(response)),
+        Err(e) => Response::from_json(&ApiResponse::error("ai_error", &format!("AI estimation failed: {}", e))),
+    }
+}
+
+pub async fn ai_analyze_dependencies_handler(mut req: Request, ctx: RouteContext<()>) -> Result<Response> {
+    // Authenticate user
+    let claims = match AuthService::from_request(&req, &ctx.env).await {
+        Ok(claims) => claims,
+        Err(_) => return Response::from_json(&ApiResponse::error("unauthorized", "Authentication required")),
+    };
+
+    // Check permissions
+    if let Err(err) = require_permission(&claims, "read") {
+        return Response::from_json(&ApiResponse::error("forbidden", &err));
+    }
+
+    // For now, return a simple placeholder response
+    // In a real implementation, this would use AI to analyze task dependencies
+    let request: AIDependencyAnalysisRequest = match req.json().await {
+        Ok(req) => req,
+        Err(_) => return Response::from_json(&ApiResponse::error("invalid_request", "Invalid request body")),
+    };
+
+    use crate::ai::AIDependencyAnalysisResponse;
+    let response = AIDependencyAnalysisResponse {
+        dependencies: vec![],
+        blocks: vec![],
+        reasoning: "Dependency analysis coming soon with AI integration".to_string(),
+    };
+
+    Response::from_json(&ApiResponse::success(response))
+}
+
+pub async fn ai_plan_sprint_handler(mut req: Request, ctx: RouteContext<()>) -> Result<Response> {
+    // Authenticate user
+    let claims = match AuthService::from_request(&req, &ctx.env).await {
+        Ok(claims) => claims,
+        Err(_) => return Response::from_json(&ApiResponse::error("unauthorized", "Authentication required")),
+    };
+
+    // Check permissions
+    if let Err(err) = require_permission(&claims, "read") {
+        return Response::from_json(&ApiResponse::error("forbidden", &err));
+    }
+
+    // For now, return a simple placeholder response
+    // In a real implementation, this would use AI for sprint planning
+    let request: AISprintPlanningRequest = match req.json().await {
+        Ok(req) => req,
+        Err(_) => return Response::from_json(&ApiResponse::error("invalid_request", "Invalid request body")),
+    };
+
+    use crate::ai::AISprintPlanningResponse;
+    let response = AISprintPlanningResponse {
+        recommended_tasks: vec![],
+        reasoning: "Sprint planning coming soon with AI integration".to_string(),
+        total_story_points: 0,
+        warnings: None,
+    };
+
+    Response::from_json(&ApiResponse::success(response))
 }

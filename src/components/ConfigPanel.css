@@ -101,6 +101,13 @@
   border-bottom: 1px solid #e0e0e0;
 }
 
+.subsection-title {
+  margin: 25px 0 15px 0;
+  color: #555;
+  font-size: 16px;
+  font-weight: 600;
+}
+
 .config-group {
   margin-bottom: 20px;
 }

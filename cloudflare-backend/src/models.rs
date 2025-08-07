@@ -267,15 +267,66 @@ pub struct ActivityLog {
 // Configuration types
 #[derive(Debug, Serialize, Deserialize)]
 pub struct WorkspaceConfig {
-    pub name: String,
-    pub description: Option<String>,
-    pub default_task_type: TaskType,
-    pub available_statuses: Vec<TaskStatus>,
-    pub available_priorities: Vec<Priority>,
-    pub enable_story_points: bool,
-    pub enable_sprints: bool,
-    pub enable_epics: bool,
-    pub theme: String,
+    #[serde(rename = "workspaceName")]
+    pub workspace_name: String,
+    pub timezone: String,
+    #[serde(rename = "dateFormat")]
+    pub date_format: String,
+    pub features: WorkspaceFeatures,
+    pub limits: WorkspaceLimits,
+    pub ai: Option<AIConfig>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct WorkspaceFeatures {
+    pub realtime: bool,
+    pub analytics: bool,
+    pub webhooks: bool,
+    #[serde(rename = "customFields")]
+    pub custom_fields: bool,
+    pub ai: bool,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct WorkspaceLimits {
+    #[serde(rename = "maxTasks")]
+    pub max_tasks: u32,
+    #[serde(rename = "maxUsers")]
+    pub max_users: u32,
+    #[serde(rename = "apiRateLimit")]
+    pub api_rate_limit: u32,
+    #[serde(rename = "aiRequestsPerDay")]
+    pub ai_requests_per_day: Option<u32>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AIConfig {
+    pub enabled: bool,
+    pub provider: String,
+    #[serde(rename = "apiKey")]
+    pub api_key: String,
+    pub endpoint: Option<String>,
+    pub model: Option<String>,
+    #[serde(rename = "maxTokens")]
+    pub max_tokens: Option<u32>,
+    pub temperature: Option<f32>,
+    pub features: AIFeatures,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AIFeatures {
+    #[serde(rename = "taskGeneration")]
+    pub task_generation: bool,
+    #[serde(rename = "acceptanceCriteria")]
+    pub acceptance_criteria: bool,
+    #[serde(rename = "technicalTasks")]
+    pub technical_tasks: bool,
+    #[serde(rename = "storyPointEstimation")]
+    pub story_point_estimation: bool,
+    #[serde(rename = "dependencyAnalysis")]
+    pub dependency_analysis: bool,
+    #[serde(rename = "sprintPlanning")]
+    pub sprint_planning: bool,
 }
 
 // Analytics types

@@ -81,20 +81,22 @@ pub struct Task {
     pub r#type: TaskType,
     pub priority: Priority,
     pub status: TaskStatus,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none", rename = "storyPoints")]
     pub story_points: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sprint: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub epic: Option<String>,
     pub description: String,
+    #[serde(rename = "acceptanceCriteria")]
     pub acceptance_criteria: Vec<ChecklistItem>,
+    #[serde(rename = "technicalTasks")]
     pub technical_tasks: Vec<ChecklistItem>,
     pub dependencies: Vec<String>,
     pub blocks: Vec<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub assignee: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none", rename = "isFavorite")]
     pub is_favorite: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub thumbnail: Option<String>,

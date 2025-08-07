@@ -5,6 +5,7 @@ mod handlers;
 mod database;
 mod config;
 mod auth;
+mod ai;
 
 use handlers::*;
 use config::load_cors_origins;
@@ -58,6 +59,13 @@ async fn fetch(req: Request, env: Env, _ctx: Context) -> Result<Response> {
         // Configuration endpoints
         .get_async("/api/config", config_get_handler)
         .put_async("/api/config", config_update_handler)
+        
+        // AI endpoints
+        .post_async("/api/ai/generate-task", ai_generate_task_handler)
+        .post_async("/api/ai/acceptance-criteria", ai_acceptance_criteria_handler)
+        .post_async("/api/ai/estimate-story-points", ai_estimate_story_points_handler)
+        .post_async("/api/ai/analyze-dependencies", ai_analyze_dependencies_handler)
+        .post_async("/api/ai/plan-sprint", ai_plan_sprint_handler)
         
         // Handle CORS preflight requests
         .options("/*", |_req, ctx| {

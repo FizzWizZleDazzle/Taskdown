@@ -57,7 +57,12 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({ remoteClient }) => {
       let current: any = newConfig;
       
       for (let i = 0; i < path.length - 1; i++) {
-        current[path[i]] = { ...current[path[i]] };
+        // Initialize nested objects if they don't exist
+        if (!current[path[i]]) {
+          current[path[i]] = {};
+        } else {
+          current[path[i]] = { ...current[path[i]] };
+        }
         current = current[path[i]];
       }
       
@@ -240,8 +245,188 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({ remoteClient }) => {
                 </div>
               </label>
             </div>
+
+            <div className="feature-toggle">
+              <label className="toggle-label">
+                <input
+                  type="checkbox"
+                  checked={editedConfig.features.ai}
+                  onChange={(e) => handleConfigChange(['features', 'ai'], e.target.checked)}
+                />
+                <span className="toggle-slider"></span>
+                <div className="toggle-content">
+                  <span className="toggle-name">🤖 AI Assistant</span>
+                  <span className="toggle-description">Enable AI-powered task generation and suggestions</span>
+                </div>
+              </label>
+            </div>
           </div>
         </div>
+
+        {editedConfig.features.ai && (
+          <div className="config-section">
+            <h3 className="section-title">🤖 AI Configuration</h3>
+            
+            <div className="config-group">
+              <label htmlFor="ai-provider">AI Provider</label>
+              <select
+                id="ai-provider"
+                value={editedConfig.ai?.provider || 'openai'}
+                onChange={(e) => handleConfigChange(['ai', 'provider'], e.target.value)}
+              >
+                <option value="openai">OpenAI</option>
+                <option value="anthropic">Anthropic (Claude)</option>
+                <option value="azure-openai">Azure OpenAI</option>
+                <option value="custom">Custom Provider</option>
+              </select>
+            </div>
+
+            <div className="config-group">
+              <label htmlFor="ai-api-key">API Key</label>
+              <input
+                id="ai-api-key"
+                type="password"
+                value={editedConfig.ai?.apiKey || ''}
+                onChange={(e) => handleConfigChange(['ai', 'apiKey'], e.target.value)}
+                placeholder="Enter your AI provider API key"
+              />
+              <small>Your API key is encrypted and stored securely</small>
+            </div>
+
+            {(editedConfig.ai?.provider === 'azure-openai' || editedConfig.ai?.provider === 'custom') && (
+              <div className="config-group">
+                <label htmlFor="ai-endpoint">Custom Endpoint</label>
+                <input
+                  id="ai-endpoint"
+                  type="url"
+                  value={editedConfig.ai?.endpoint || ''}
+                  onChange={(e) => handleConfigChange(['ai', 'endpoint'], e.target.value)}
+                  placeholder="https://your-endpoint.example.com"
+                />
+                <small>Custom API endpoint URL</small>
+              </div>
+            )}
+
+            <div className="config-group">
+              <label htmlFor="ai-model">Model</label>
+              <input
+                id="ai-model"
+                type="text"
+                value={editedConfig.ai?.model || ''}
+                onChange={(e) => handleConfigChange(['ai', 'model'], e.target.value)}
+                placeholder="gpt-4, claude-3-opus, etc."
+              />
+              <small>Leave empty to use provider defaults</small>
+            </div>
+
+            <div className="config-group">
+              <label htmlFor="ai-temperature">Creativity (0.0 - 1.0)</label>
+              <input
+                id="ai-temperature"
+                type="range"
+                min="0"
+                max="1"
+                step="0.1"
+                value={editedConfig.ai?.temperature || 0.7}
+                onChange={(e) => handleConfigChange(['ai', 'temperature'], parseFloat(e.target.value))}
+              />
+              <small>Current: {editedConfig.ai?.temperature || 0.7} (0.0 = consistent, 1.0 = creative)</small>
+            </div>
+
+            <h4 className="subsection-title">AI Features</h4>
+            <div className="feature-toggles">
+              <div className="feature-toggle">
+                <label className="toggle-label">
+                  <input
+                    type="checkbox"
+                    checked={editedConfig.ai?.features?.taskGeneration || false}
+                    onChange={(e) => handleConfigChange(['ai', 'features', 'taskGeneration'], e.target.checked)}
+                  />
+                  <span className="toggle-slider"></span>
+                  <div className="toggle-content">
+                    <span className="toggle-name">📝 Task Generation</span>
+                    <span className="toggle-description">Auto-generate task descriptions and details</span>
+                  </div>
+                </label>
+              </div>
+
+              <div className="feature-toggle">
+                <label className="toggle-label">
+                  <input
+                    type="checkbox"
+                    checked={editedConfig.ai?.features?.acceptanceCriteria || false}
+                    onChange={(e) => handleConfigChange(['ai', 'features', 'acceptanceCriteria'], e.target.checked)}
+                  />
+                  <span className="toggle-slider"></span>
+                  <div className="toggle-content">
+                    <span className="toggle-name">✅ Acceptance Criteria</span>
+                    <span className="toggle-description">Suggest acceptance criteria for user stories</span>
+                  </div>
+                </label>
+              </div>
+
+              <div className="feature-toggle">
+                <label className="toggle-label">
+                  <input
+                    type="checkbox"
+                    checked={editedConfig.ai?.features?.technicalTasks || false}
+                    onChange={(e) => handleConfigChange(['ai', 'features', 'technicalTasks'], e.target.checked)}
+                  />
+                  <span className="toggle-slider"></span>
+                  <div className="toggle-content">
+                    <span className="toggle-name">⚙️ Technical Tasks</span>
+                    <span className="toggle-description">Generate technical implementation tasks</span>
+                  </div>
+                </label>
+              </div>
+
+              <div className="feature-toggle">
+                <label className="toggle-label">
+                  <input
+                    type="checkbox"
+                    checked={editedConfig.ai?.features?.storyPointEstimation || false}
+                    onChange={(e) => handleConfigChange(['ai', 'features', 'storyPointEstimation'], e.target.checked)}
+                  />
+                  <span className="toggle-slider"></span>
+                  <div className="toggle-content">
+                    <span className="toggle-name">📊 Story Point Estimation</span>
+                    <span className="toggle-description">AI-powered effort estimation</span>
+                  </div>
+                </label>
+              </div>
+
+              <div className="feature-toggle">
+                <label className="toggle-label">
+                  <input
+                    type="checkbox"
+                    checked={editedConfig.ai?.features?.dependencyAnalysis || false}
+                    onChange={(e) => handleConfigChange(['ai', 'features', 'dependencyAnalysis'], e.target.checked)}
+                  />
+                  <span className="toggle-slider"></span>
+                  <div className="toggle-content">
+                    <span className="toggle-name">🔗 Dependency Analysis</span>
+                    <span className="toggle-description">Automatic dependency detection</span>
+                  </div>
+                </label>
+              </div>
+
+              <div className="feature-toggle">
+                <label className="toggle-label">
+                  <input
+                    type="checkbox"
+                    checked={editedConfig.ai?.features?.sprintPlanning || false}
+                    onChange={(e) => handleConfigChange(['ai', 'features', 'sprintPlanning'], e.target.checked)}
+                  />
+                  <span className="toggle-slider"></span>
+                  <div className="toggle-content">
+                    <span className="toggle-name">📅 Sprint Planning</span>
+                    <span className="toggle-description">AI-assisted sprint planning recommendations</span>
+                  </div>
+                </label>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="config-section">
           <h3 className="section-title">🚥 Limits & Quotas</h3>

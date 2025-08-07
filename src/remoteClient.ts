@@ -10,7 +10,15 @@ import {
   ActivityResponse, 
   WorkspaceConfig, 
   HealthStatus,
-  TaskQueryParams
+  TaskQueryParams,
+  AITaskGenerationRequest,
+  AITaskGenerationResponse,
+  AIAcceptanceCriteriaRequest,
+  AIStoryPointEstimationRequest,
+  AIDependencyAnalysisRequest,
+  AIDependencyAnalysisResponse,
+  AISprintPlanningRequest,
+  AISprintPlanningResponse
 } from './types';
 
 export interface ApiResponse<T = any> {
@@ -103,6 +111,13 @@ export interface IRemoteWorkspaceClient {
     taskId?: string; 
     action?: string; 
   }): Promise<ActivityResponse>;
+  
+  // AI Services
+  generateTaskDetails(request: AITaskGenerationRequest): Promise<AITaskGenerationResponse>;
+  generateAcceptanceCriteria(request: AIAcceptanceCriteriaRequest): Promise<string[]>;
+  estimateStoryPoints(request: AIStoryPointEstimationRequest): Promise<number>;
+  analyzeDependencies(request: AIDependencyAnalysisRequest): Promise<AIDependencyAnalysisResponse>;
+  planSprint(request: AISprintPlanningRequest): Promise<AISprintPlanningResponse>;
   
   // Configuration and Settings
   getConfig(): Promise<WorkspaceConfig>;
@@ -510,6 +525,72 @@ export class HttpRemoteWorkspaceClient implements IRemoteWorkspaceClient {
     }
 
     throw new Error(response.error?.message || 'Failed to get activity');
+  }
+
+  // AI Services
+  async generateTaskDetails(request: AITaskGenerationRequest): Promise<AITaskGenerationResponse> {
+    const response = await this.makeRequest<AITaskGenerationResponse>('/api/ai/generate-task', {
+      method: 'POST',
+      body: JSON.stringify(request)
+    });
+
+    if (response.success && response.data) {
+      return response.data;
+    }
+
+    throw new Error(response.error?.message || 'Failed to generate task details');
+  }
+
+  async generateAcceptanceCriteria(request: AIAcceptanceCriteriaRequest): Promise<string[]> {
+    const response = await this.makeRequest<string[]>('/api/ai/acceptance-criteria', {
+      method: 'POST',
+      body: JSON.stringify(request)
+    });
+
+    if (response.success && response.data) {
+      return response.data;
+    }
+
+    throw new Error(response.error?.message || 'Failed to generate acceptance criteria');
+  }
+
+  async estimateStoryPoints(request: AIStoryPointEstimationRequest): Promise<number> {
+    const response = await this.makeRequest<number>('/api/ai/estimate-story-points', {
+      method: 'POST',
+      body: JSON.stringify(request)
+    });
+
+    if (response.success && response.data !== undefined) {
+      return response.data;
+    }
+
+    throw new Error(response.error?.message || 'Failed to estimate story points');
+  }
+
+  async analyzeDependencies(request: AIDependencyAnalysisRequest): Promise<AIDependencyAnalysisResponse> {
+    const response = await this.makeRequest<AIDependencyAnalysisResponse>('/api/ai/analyze-dependencies', {
+      method: 'POST',
+      body: JSON.stringify(request)
+    });
+
+    if (response.success && response.data) {
+      return response.data;
+    }
+
+    throw new Error(response.error?.message || 'Failed to analyze dependencies');
+  }
+
+  async planSprint(request: AISprintPlanningRequest): Promise<AISprintPlanningResponse> {
+    const response = await this.makeRequest<AISprintPlanningResponse>('/api/ai/plan-sprint', {
+      method: 'POST',
+      body: JSON.stringify(request)
+    });
+
+    if (response.success && response.data) {
+      return response.data;
+    }
+
+    throw new Error(response.error?.message || 'Failed to plan sprint');
   }
 
   // Configuration and Settings

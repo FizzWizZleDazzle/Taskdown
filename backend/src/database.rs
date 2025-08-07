@@ -221,13 +221,66 @@ async fn create_tables(pool: &SqlitePool) -> Result<()> {
 
 // Task database operations
 pub async fn get_tasks(pool: &DbPool, params: &TaskQueryParams) -> Result<Vec<Task>> {
-    let rows = sqlx::query_as::<_, TaskRow>(
-        "SELECT id, title, task_type, priority, status, story_points, sprint, epic, 
-                description, assignee, is_favorite, thumbnail, created_at, updated_at
-         FROM tasks ORDER BY updated_at DESC"
-    )
-    .fetch_all(pool)
-    .await?;
+    let mut query = "SELECT id, title, task_type, priority, status, story_points, sprint, epic, 
+                           description, assignee, is_favorite, thumbnail, created_at, updated_at
+                     FROM tasks WHERE 1=1".to_string();
+    let mut conditions = Vec::new();
+    let mut bind_values: Vec<String> = Vec::new();
+
+    // Add filtering conditions
+    if let Some(epic) = &params.epic {
+        conditions.push("epic = ?");
+        bind_values.push(epic.clone());
+    }
+
+    if let Some(status) = &params.status {
+        conditions.push("status = ?");
+        bind_values.push(status.clone());
+    }
+
+    if let Some(assignee) = &params.assignee {
+        conditions.push("assignee = ?");
+        bind_values.push(assignee.clone());
+    }
+
+    if let Some(search) = &params.search {
+        conditions.push("(title LIKE ? OR description LIKE ?)");
+        let search_pattern = format!("%{}%", search);
+        bind_values.push(search_pattern.clone());
+        bind_values.push(search_pattern);
+    }
+
+    // Add conditions to query
+    for condition in conditions {
+        query.push_str(" AND ");
+        query.push_str(condition);
+    }
+
+    // Add sorting
+    let sort_column = params.sort.as_ref()
+        .and_then(|s| s.split(':').next())
+        .unwrap_or("updated_at");
+    let sort_direction = params.sort.as_ref()
+        .and_then(|s| s.split(':').nth(1))
+        .unwrap_or("desc");
+    
+    query.push_str(&format!(" ORDER BY {} {}", sort_column, sort_direction));
+
+    // Add pagination
+    if let Some(limit) = params.limit {
+        query.push_str(&format!(" LIMIT {}", limit));
+        if let Some(offset) = params.offset {
+            query.push_str(&format!(" OFFSET {}", offset));
+        }
+    }
+
+    // Execute query with bindings
+    let mut sqlx_query = sqlx::query_as::<_, TaskRow>(&query);
+    for value in bind_values {
+        sqlx_query = sqlx_query.bind(value);
+    }
+
+    let rows = sqlx_query.fetch_all(pool).await?;
 
     let mut tasks = Vec::new();
     for row in rows {
@@ -518,4 +571,105 @@ pub async fn get_workspace_config(pool: &DbPool) -> Result<WorkspaceConfig> {
         features,
         limits,
     })
+}
+
+// Analytics functions
+pub async fn get_tasks_by_status(pool: &DbPool) -> Result<std::collections::HashMap<String, u32>> {
+    let rows = sqlx::query("SELECT status, COUNT(*) as count FROM tasks GROUP BY status")
+        .fetch_all(pool)
+        .await?;
+    
+    let mut result = std::collections::HashMap::new();
+    for row in rows {
+        let status: String = row.get("status");
+        let count: i64 = row.get("count");
+        result.insert(status, count as u32);
+    }
+    
+    Ok(result)
+}
+
+pub async fn get_tasks_by_type(pool: &DbPool) -> Result<std::collections::HashMap<String, u32>> {
+    let rows = sqlx::query("SELECT task_type, COUNT(*) as count FROM tasks GROUP BY task_type")
+        .fetch_all(pool)
+        .await?;
+    
+    let mut result = std::collections::HashMap::new();
+    for row in rows {
+        let task_type: String = row.get("task_type");
+        let count: i64 = row.get("count");
+        result.insert(task_type, count as u32);
+    }
+    
+    Ok(result)
+}
+
+pub async fn get_tasks_by_priority(pool: &DbPool) -> Result<std::collections::HashMap<String, u32>> {
+    let rows = sqlx::query("SELECT priority, COUNT(*) as count FROM tasks GROUP BY priority")
+        .fetch_all(pool)
+        .await?;
+    
+    let mut result = std::collections::HashMap::new();
+    for row in rows {
+        let priority: String = row.get("priority");
+        let count: i64 = row.get("count");
+        result.insert(priority, count as u32);
+    }
+    
+    Ok(result)
+}
+
+pub async fn get_average_story_points(pool: &DbPool) -> Result<f32> {
+    let row = sqlx::query("SELECT AVG(CAST(story_points as REAL)) as avg_points FROM tasks WHERE story_points IS NOT NULL")
+        .fetch_one(pool)
+        .await?;
+    
+    Ok(row.get::<Option<f64>, _>("avg_points").unwrap_or(0.0) as f32)
+}
+
+pub async fn get_completion_rate(pool: &DbPool) -> Result<f32> {
+    let total_row = sqlx::query("SELECT COUNT(*) as total FROM tasks")
+        .fetch_one(pool)
+        .await?;
+    let total: i64 = total_row.get("total");
+    
+    if total == 0 {
+        return Ok(0.0);
+    }
+    
+    let completed_row = sqlx::query("SELECT COUNT(*) as completed FROM tasks WHERE status = 'Done'")
+        .fetch_one(pool)
+        .await?;
+    let completed: i64 = completed_row.get("completed");
+    
+    Ok((completed as f32 / total as f32) * 100.0)
+}
+
+pub async fn get_active_sprints(pool: &DbPool) -> Result<Vec<String>> {
+    let rows = sqlx::query("SELECT DISTINCT sprint FROM tasks WHERE sprint IS NOT NULL AND sprint != '' AND status != 'Done'")
+        .fetch_all(pool)
+        .await?;
+    
+    let mut sprints = Vec::new();
+    for row in rows {
+        let sprint: String = row.get("sprint");
+        sprints.push(sprint);
+    }
+    
+    Ok(sprints)
+}
+
+// Import/Export functions
+pub async fn clear_all_tasks(pool: &DbPool) -> Result<()> {
+    // Delete in correct order due to foreign key constraints
+    sqlx::query("DELETE FROM task_dependencies").execute(pool).await?;
+    sqlx::query("DELETE FROM task_blocks").execute(pool).await?;
+    sqlx::query("DELETE FROM checklist_items").execute(pool).await?;
+    sqlx::query("DELETE FROM tasks").execute(pool).await?;
+    Ok(())
+}
+
+pub async fn get_all_tasks_for_export(pool: &DbPool) -> Result<Vec<Task>> {
+    let params = TaskQueryParams::default();
+    get_tasks(pool, &params).await
 }

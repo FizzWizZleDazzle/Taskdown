@@ -1,7 +1,6 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
-use uuid::Uuid;
 
 // API Response wrapper
 #[derive(Debug, Serialize)]
@@ -176,6 +175,17 @@ pub struct AuthCredentials {
     pub custom_headers: Option<std::collections::HashMap<String, String>>,
 }
 
+// Type alias for compatibility with auth.rs
+pub type AuthConfig = AuthCredentials;
+
+#[derive(Debug, Serialize)]
+pub struct AuthVerificationResult {
+    pub authenticated: bool,
+    pub session_token: Option<String>,
+    pub expires_at: Option<DateTime<Utc>>,
+    pub permissions: Vec<String>,
+}
+
 #[derive(Debug, Serialize)]
 pub struct AuthResponse {
     pub authenticated: bool,
@@ -245,11 +255,11 @@ pub struct TaskSyncResponse {
 }
 
 // Query parameters for tasks
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Default)]
 pub struct TaskQueryParams {
     pub last_sync: Option<String>,
     pub epic: Option<String>,
-    pub status: Option<TaskStatus>,
+    pub status: Option<String>, // Changed from TaskStatus to String for easier filtering
     pub assignee: Option<String>,
     pub limit: Option<u32>,
     pub offset: Option<u32>,

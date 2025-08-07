@@ -1,6 +1,6 @@
 use axum::{
     extract::{Path, Query, State},
-    http::StatusCode,
+    http::{StatusCode, HeaderMap},
     response::Json,
 };
 use chrono::Utc;
@@ -8,6 +8,7 @@ use std::collections::HashMap;
 
 use crate::database::{self, DbPool};
 use crate::models::*;
+use crate::auth::{AuthService, extract_auth_claims};
 
 // Health check handler
 pub async fn health_handler() -> Json<ApiResponse<HealthStatus>> {
@@ -35,26 +36,59 @@ pub async fn health_handler() -> Json<ApiResponse<HealthStatus>> {
 pub async fn auth_verify_handler(
     Json(request): Json<AuthRequest>,
 ) -> Json<ApiResponse<AuthResponse>> {
-    // Simple authentication - in real implementation, verify credentials
-    let auth_response = AuthResponse {
-        authenticated: true,
-        session_token: Some("dummy-session-token".to_string()),
-        expires_at: Some(Utc::now() + chrono::Duration::hours(24)),
-        permissions: vec!["read".to_string(), "write".to_string(), "admin".to_string()],
-    };
-
-    Json(ApiResponse::success(auth_response))
+    let auth_service = AuthService::new();
+    
+    match auth_service.authenticate_request(&request.credentials).await {
+        Ok(auth_result) => {
+            let auth_response = AuthResponse {
+                authenticated: auth_result.authenticated,
+                session_token: auth_result.session_token,
+                expires_at: auth_result.expires_at,
+                permissions: auth_result.permissions,
+            };
+            Json(ApiResponse::success(auth_response))
+        }
+        Err(e) => {
+            let auth_response = AuthResponse {
+                authenticated: false,
+                session_token: None,
+                expires_at: None,
+                permissions: vec![],
+            };
+            Json(ApiResponse::error("AUTH_FAILED".to_string(), e.to_string()))
+        }
+    }
 }
 
-pub async fn auth_status_handler() -> Json<ApiResponse<AuthResponse>> {
-    let auth_response = AuthResponse {
-        authenticated: true,
-        session_token: None,
-        expires_at: Some(Utc::now() + chrono::Duration::hours(24)),
-        permissions: vec!["read".to_string(), "write".to_string(), "admin".to_string()],
-    };
-
-    Json(ApiResponse::success(auth_response))
+pub async fn auth_status_handler(
+    headers: HeaderMap,
+) -> Json<ApiResponse<AuthResponse>> {
+    let authorization = headers.get("authorization")
+        .and_then(|h| h.to_str().ok());
+    
+    match extract_auth_claims(authorization) {
+        Ok(Some(claims)) => {
+            let auth_response = AuthResponse {
+                authenticated: true,
+                session_token: None, // Don't return the token in status check
+                expires_at: Some(chrono::DateTime::from_timestamp(claims.exp, 0).unwrap().into()),
+                permissions: claims.permissions,
+            };
+            Json(ApiResponse::success(auth_response))
+        }
+        Ok(None) => {
+            let auth_response = AuthResponse {
+                authenticated: false,
+                session_token: None,
+                expires_at: None,
+                permissions: vec![],
+            };
+            Json(ApiResponse::success(auth_response))
+        }
+        Err(e) => {
+            Json(ApiResponse::error("TOKEN_INVALID".to_string(), e.to_string()))
+        }
+    }
 }
 
 // Workspace info handler
@@ -229,69 +263,165 @@ pub async fn tasks_bulk_handler(
 
 // Import/Export handlers
 pub async fn import_markdown_handler(
+    State(pool): State<DbPool>,
     Json(request): Json<ImportMarkdownRequest>,
 ) -> Json<ApiResponse<ImportResult>> {
-    // Placeholder implementation
+    // For now, this is a basic implementation that could be enhanced
+    // In a production environment, you'd implement the Jira-style markdown parser
     let result = ImportResult {
         imported: 0,
         updated: 0,
-        errors: vec!["Import not yet implemented".to_string()],
+        errors: vec!["Import functionality requires frontend parser integration".to_string()],
     };
 
     Json(ApiResponse::success(result))
 }
 
-pub async fn export_markdown_handler() -> Json<ApiResponse<ExportResult>> {
-    let result = ExportResult {
-        markdown: "# Taskdown Export\n\nNo tasks found.".to_string(),
-        filename: format!("taskdown-export-{}.md", Utc::now().format("%Y%m%d")),
-    };
+pub async fn export_markdown_handler(
+    State(pool): State<DbPool>,
+) -> Result<Json<ApiResponse<ExportResult>>, StatusCode> {
+    match database::get_all_tasks_for_export(&pool).await {
+        Ok(tasks) => {
+            let mut markdown = String::new();
+            markdown.push_str("# Taskdown Export\n\n");
+            
+            // Group tasks by epic
+            let mut epics: HashMap<String, Vec<&Task>> = HashMap::new();
+            let mut orphaned_tasks = Vec::new();
+            
+            for task in &tasks {
+                if let Some(epic) = &task.epic {
+                    epics.entry(epic.clone()).or_insert_with(Vec::new).push(task);
+                } else {
+                    orphaned_tasks.push(task);
+                }
+            }
+            
+            // Export epics
+            for (epic_name, epic_tasks) in epics {
+                markdown.push_str(&format!("## Epic: {}\n\n", epic_name));
+                
+                for task in epic_tasks {
+                    export_task_to_markdown(task, &mut markdown);
+                }
+            }
+            
+            // Export orphaned tasks
+            if !orphaned_tasks.is_empty() {
+                markdown.push_str("## Miscellaneous Tasks\n\n");
+                for task in orphaned_tasks {
+                    export_task_to_markdown(task, &mut markdown);
+                }
+            }
+            
+            let result = ExportResult {
+                markdown,
+                filename: format!("taskdown-export-{}.md", Utc::now().format("%Y-%m-%d")),
+            };
+            
+            Ok(Json(ApiResponse::success(result)))
+        }
+        Err(e) => {
+            tracing::error!("Failed to export tasks: {}", e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
+}
 
-    Json(ApiResponse::success(result))
+fn export_task_to_markdown(task: &Task, markdown: &mut String) {
+    markdown.push_str(&format!("### {}: {}\n\n", task.id, task.title));
+    
+    markdown.push_str(&format!("**Type**: {:?}\n", task.r#type));
+    markdown.push_str(&format!("**Priority**: {:?}\n", task.priority));
+    markdown.push_str(&format!("**Status**: {:?}\n", task.status));
+    
+    if let Some(points) = task.story_points {
+        markdown.push_str(&format!("**Story Points**: {}\n", points));
+    }
+    
+    if let Some(sprint) = &task.sprint {
+        markdown.push_str(&format!("**Sprint**: {}\n", sprint));
+    }
+    
+    if let Some(assignee) = &task.assignee {
+        markdown.push_str(&format!("**Assignee**: {}\n", assignee));
+    }
+    
+    if !task.description.is_empty() {
+        markdown.push_str(&format!("**Description**: {}\n", task.description));
+    }
+    
+    // Export acceptance criteria
+    if !task.acceptance_criteria.is_empty() {
+        markdown.push_str("\n**Acceptance Criteria**:\n");
+        for item in &task.acceptance_criteria {
+            let checkbox = if item.completed { "x" } else { " " };
+            markdown.push_str(&format!("- [{}] {}\n", checkbox, item.text));
+        }
+    }
+    
+    // Export technical tasks
+    if !task.technical_tasks.is_empty() {
+        markdown.push_str("\n**Technical Tasks**:\n");
+        for item in &task.technical_tasks {
+            let checkbox = if item.completed { "x" } else { " " };
+            markdown.push_str(&format!("- [{}] {}\n", checkbox, item.text));
+        }
+    }
+    
+    // Export dependencies and blocks
+    if !task.dependencies.is_empty() {
+        markdown.push_str(&format!("**Dependencies**: {}\n", task.dependencies.join(", ")));
+    } else {
+        markdown.push_str("**Dependencies**: None\n");
+    }
+    
+    if !task.blocks.is_empty() {
+        markdown.push_str(&format!("**Blocks**: {}\n", task.blocks.join(", ")));
+    } else {
+        markdown.push_str("**Blocks**: None\n");
+    }
+    
+    markdown.push_str("\n---\n\n");
 }
 
 // Analytics handlers
 pub async fn analytics_summary_handler(
     State(pool): State<DbPool>,
 ) -> Result<Json<ApiResponse<AnalyticsSummary>>, StatusCode> {
-    match database::get_task_count(&pool).await {
-        Ok(total_tasks) => {
-            let mut tasks_by_status = HashMap::new();
-            tasks_by_status.insert("Todo".to_string(), 0);
-            tasks_by_status.insert("In Progress".to_string(), 0);
-            tasks_by_status.insert("In Review".to_string(), 0);
-            tasks_by_status.insert("Done".to_string(), 0);
+    let total_tasks = database::get_task_count(&pool).await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    
+    let tasks_by_status = database::get_tasks_by_status(&pool).await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    
+    let tasks_by_type = database::get_tasks_by_type(&pool).await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    
+    let tasks_by_priority = database::get_tasks_by_priority(&pool).await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    
+    let average_story_points = database::get_average_story_points(&pool).await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    
+    let completion_rate = database::get_completion_rate(&pool).await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    
+    let active_sprints = database::get_active_sprints(&pool).await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-            let mut tasks_by_type = HashMap::new();
-            tasks_by_type.insert("Epic".to_string(), 0);
-            tasks_by_type.insert("Story".to_string(), 0);
-            tasks_by_type.insert("Task".to_string(), 0);
-            tasks_by_type.insert("Bug".to_string(), 0);
+    let summary = AnalyticsSummary {
+        total_tasks,
+        tasks_by_status,
+        tasks_by_type,
+        tasks_by_priority,
+        average_story_points,
+        completion_rate,
+        active_sprints,
+        last_updated: Utc::now(),
+    };
 
-            let mut tasks_by_priority = HashMap::new();
-            tasks_by_priority.insert("Critical".to_string(), 0);
-            tasks_by_priority.insert("High".to_string(), 0);
-            tasks_by_priority.insert("Medium".to_string(), 0);
-            tasks_by_priority.insert("Low".to_string(), 0);
-
-            let summary = AnalyticsSummary {
-                total_tasks,
-                tasks_by_status,
-                tasks_by_type,
-                tasks_by_priority,
-                average_story_points: 0.0,
-                completion_rate: 0.0,
-                active_sprints: vec![],
-                last_updated: Utc::now(),
-            };
-
-            Ok(Json(ApiResponse::success(summary)))
-        }
-        Err(e) => {
-            tracing::error!("Failed to get analytics summary: {}", e);
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
-        }
-    }
+    Ok(Json(ApiResponse::success(summary)))
 }
 
 pub async fn analytics_burndown_handler(

@@ -27,6 +27,18 @@ const isValidTaskStatus = (status: string): status is TaskStatus => {
   return Object.values(TASK_STATUSES).includes(status as TaskStatus);
 };
 
+// Utility function to check if a file is a Markdown file
+// Uses both file extension and MIME type to be more flexible across different systems
+const isMarkdownFile = (file: File): boolean => {
+  const fileName = file.name.toLowerCase();
+  const fileExtension = fileName.endsWith('.md') || fileName.endsWith('.markdown');
+  const mimeType = file.type === 'text/markdown' || file.type === 'text/plain' || file.type === '';
+  
+  // Accept file if it has a markdown extension, regardless of MIME type
+  // Some systems don't properly detect .md files as text/markdown
+  return fileExtension || (mimeType && fileName.includes('.md'));
+};
+
 interface EditingState {
   isModalOpen: boolean;
   selectedTaskId: string | null;
@@ -335,7 +347,7 @@ const Board: React.FC<BoardProps> = ({
   // File drag & drop handlers
   const handleFileInputChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file && file.type === 'text/markdown') {
+    if (file && isMarkdownFile(file)) {
       onFileImport(file);
     } else if (file) {
       alert('Please select a valid Markdown (.md) file.');
@@ -359,7 +371,7 @@ const Board: React.FC<BoardProps> = ({
     setIsDragOver(false);
     
     const file = event.dataTransfer.files[0];
-    if (file && file.type === 'text/markdown') {
+    if (file && isMarkdownFile(file)) {
       onFileImport(file);
     } else if (file) {
       alert('Please drop a valid Markdown (.md) file.');

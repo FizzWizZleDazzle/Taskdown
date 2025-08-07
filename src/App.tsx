@@ -190,6 +190,12 @@ const App: React.FC = () => {
       try {
         const markdown = e.target?.result as string;
         
+        // Basic validation of markdown content
+        if (!markdown || markdown.trim().length === 0) {
+          alert('The file appears to be empty. Please select a file with valid Markdown content.');
+          return;
+        }
+        
         // Use remote import if available, otherwise parse and set locally
         if (dataService.isRemote() && dataService.importMarkdown) {
           await dataService.importMarkdown(markdown);
@@ -199,15 +205,28 @@ const App: React.FC = () => {
         } else {
           const parser = new MarkdownParser();
           const boardData = parser.parse(markdown);
+          
+          // Validate that we got some useful data
+          if (!boardData.epics || boardData.epics.length === 0) {
+            alert('No valid epics or cards found in the markdown file. Please check the format and try again.');
+            return;
+          }
+          
           const importedTasks = boardToTasks(boardData);
           await dataService.setTasks(importedTasks);
           setTasks(importedTasks);
         }
       } catch (error) {
         console.error('Error importing file:', error);
-        alert('Error importing file. Please check that the file is valid Markdown.');
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+        alert(`Error importing file: ${errorMessage}\n\nPlease check that the file contains valid Jira-style Markdown format.`);
       }
     };
+    
+    reader.onerror = () => {
+      alert('Error reading file. Please try again or check if the file is corrupted.');
+    };
+    
     reader.readAsText(file);
   };
 

@@ -1,11 +1,8 @@
 use axum::{
-    extract::Query,
-    http::{header, Method, StatusCode},
-    response::Json,
+    http::{header, Method},
     routing::{get, post, put, delete},
     Router,
 };
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use tower::ServiceBuilder;
 use tower_http::cors::{Any, CorsLayer};
@@ -14,8 +11,8 @@ use tracing_subscriber;
 mod models;
 mod handlers;
 mod database;
+mod auth;
 
-use models::*;
 use handlers::*;
 
 #[tokio::main]

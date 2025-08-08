@@ -1,7 +1,6 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
-use uuid::Uuid;
 
 // API Response wrapper
 #[derive(Debug, Serialize)]
@@ -82,20 +81,22 @@ pub struct Task {
     pub r#type: TaskType,
     pub priority: Priority,
     pub status: TaskStatus,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none", rename = "storyPoints")]
     pub story_points: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sprint: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub epic: Option<String>,
     pub description: String,
+    #[serde(rename = "acceptanceCriteria")]
     pub acceptance_criteria: Vec<ChecklistItem>,
+    #[serde(rename = "technicalTasks")]
     pub technical_tasks: Vec<ChecklistItem>,
     pub dependencies: Vec<String>,
     pub blocks: Vec<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub assignee: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none", rename = "isFavorite")]
     pub is_favorite: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub thumbnail: Option<String>,
@@ -176,6 +177,17 @@ pub struct AuthCredentials {
     pub custom_headers: Option<std::collections::HashMap<String, String>>,
 }
 
+// Type alias for compatibility with auth.rs
+pub type AuthConfig = AuthCredentials;
+
+#[derive(Debug, Serialize)]
+pub struct AuthVerificationResult {
+    pub authenticated: bool,
+    pub session_token: Option<String>,
+    pub expires_at: Option<DateTime<Utc>>,
+    pub permissions: Vec<String>,
+}
+
 #[derive(Debug, Serialize)]
 pub struct AuthResponse {
     pub authenticated: bool,
@@ -245,11 +257,11 @@ pub struct TaskSyncResponse {
 }
 
 // Query parameters for tasks
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Default)]
 pub struct TaskQueryParams {
     pub last_sync: Option<String>,
     pub epic: Option<String>,
-    pub status: Option<TaskStatus>,
+    pub status: Option<String>, // Changed from TaskStatus to String for easier filtering
     pub assignee: Option<String>,
     pub limit: Option<u32>,
     pub offset: Option<u32>,

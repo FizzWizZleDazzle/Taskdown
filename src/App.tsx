@@ -114,15 +114,7 @@ const App: React.FC = () => {
   }, [dataService]);
 
   const generateId = () => {
-    // Get the highest number for current workspace
-    const workspaceTasks = tasks.filter(t => t.id.startsWith(`${currentWorkspace.id}-`));
-    const numbers = workspaceTasks.map(t => {
-      const match = t.id.match(new RegExp(`^${currentWorkspace.id}-(\\d+)$`));
-      return match ? parseInt(match[1], 10) : 0;
-    });
-    const maxNumber = numbers.length > 0 ? Math.max(...numbers) : 0;
-    const nextNumber = (maxNumber + 1).toString().padStart(3, '0');
-    return `${currentWorkspace.id}-${nextNumber}`;
+    return `TASK-${crypto.randomUUID()}`;
   };
 
   const handleTaskUpdate = async (updatedTask: Task, originalId?: string) => {

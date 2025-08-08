@@ -69,16 +69,8 @@ const TaskModal: React.FC<TaskModalProps> = ({
       setAcceptanceCriteria([...task.acceptanceCriteria]);
       setTechnicalTasks([...task.technicalTasks]);
     } else {
-      // Reset form for new task with workspace-based ID
-      const workspaceId = currentWorkspace?.id || 'DEFAULT';
-      const workspaceTasks = existingTaskIds.filter(id => id.startsWith(`${workspaceId}-`));
-      const numbers = workspaceTasks.map(id => {
-        const match = id.match(new RegExp(`^${workspaceId}-(\\d+)$`));
-        return match ? parseInt(match[1], 10) : 0;
-      });
-      const maxNumber = numbers.length > 0 ? Math.max(...numbers) : 0;
-      const nextNumber = (maxNumber + 1).toString().padStart(3, '0');
-      const newId = `${workspaceId}-${nextNumber}`;
+      // Reset form for new task with crypto-generated ID
+      const newId = `TASK-${crypto.randomUUID()}`;
       
       setFormData({ ...DEFAULT_FORM_DATA, id: newId });
       setAcceptanceCriteria([]);

@@ -9,11 +9,12 @@ import './Dashboard.css';
 interface DashboardProps {
   remoteClient?: IRemoteWorkspaceClient;
   onClose?: () => void;
+  onConfigUpdate?: () => void;
 }
 
 type DashboardTab = 'analytics' | 'users' | 'activity' | 'config';
 
-export const Dashboard: React.FC<DashboardProps> = ({ remoteClient, onClose }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ remoteClient, onClose, onConfigUpdate }) => {
   const [activeTab, setActiveTab] = useState<DashboardTab>('analytics');
 
   const tabs = [
@@ -57,7 +58,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ remoteClient, onClose }) =
       </div>
 
         <div className="dashboard-content">
-          <ActiveComponent remoteClient={remoteClient} />
+          {activeTab === 'config' ? (
+            <ConfigPanel remoteClient={remoteClient} onConfigUpdate={onConfigUpdate} />
+          ) : (
+            <ActiveComponent remoteClient={remoteClient} />
+          )}
         </div>
       </div>
     </div>

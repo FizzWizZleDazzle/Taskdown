@@ -184,6 +184,21 @@ const App: React.FC = () => {
     }
   };
 
+  const handleWorkspaceConfigUpdate = async () => {
+    // Refresh workspace configuration after it's been updated
+    if (dataService?.isRemote() && dataService.getRemoteClient) {
+      try {
+        const remoteClient = dataService.getRemoteClient();
+        if (remoteClient) {
+          const config = await remoteClient.getConfig();
+          setWorkspaceConfig(config);
+        }
+      } catch (configError) {
+        console.warn('Could not refresh workspace configuration:', configError);
+      }
+    }
+  };
+
   // Auto-save indicator with debounced updates for better UX
   const [lastSaved, setLastSaved] = useState<Date>(new Date());
   const [isSaving, setIsSaving] = useState<boolean>(false);
@@ -389,6 +404,7 @@ const App: React.FC = () => {
         <Dashboard
           remoteClient={dataService?.getRemoteClient?.()}
           onClose={() => setShowSettings(false)}
+          onConfigUpdate={handleWorkspaceConfigUpdate}
         />
       )}
       

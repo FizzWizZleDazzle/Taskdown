@@ -84,8 +84,8 @@ const TaskModal: React.FC<TaskModalProps> = ({
       if (result.suggestedPriority) {
         setFormData(prev => ({ ...prev, priority: result.suggestedPriority }));
       }
-      if (result.estimatedStoryPoints) {
-        setFormData(prev => ({ ...prev, storyPoints: result.estimatedStoryPoints! }));
+      if (result.estimatedStoryPoints !== undefined) {
+        setFormData(prev => ({ ...prev, storyPoints: result.estimatedStoryPoints }));
       }
       if (result.acceptanceCriteria.length > 0) {
         const newCriteria = result.acceptanceCriteria.map(text => ({ 

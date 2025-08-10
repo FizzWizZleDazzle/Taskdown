@@ -5,9 +5,10 @@ import './ConfigPanel.css';
 
 interface ConfigPanelProps {
   remoteClient?: IRemoteWorkspaceClient;
+  onConfigUpdate?: () => void;
 }
 
-export const ConfigPanel: React.FC<ConfigPanelProps> = ({ remoteClient }) => {
+export const ConfigPanel: React.FC<ConfigPanelProps> = ({ remoteClient, onConfigUpdate }) => {
   const [config, setConfig] = useState<WorkspaceConfig | null>(null);
   const [editedConfig, setEditedConfig] = useState<WorkspaceConfig | null>(null);
   const [loading, setLoading] = useState(false);
@@ -22,8 +23,9 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({ remoteClient }) => {
       setLoading(true);
       setError(null);
       const data = await remoteClient.getConfig();
-      setConfig(data);
-      setEditedConfig(data);
+      const initializedData = initializeAIConfig(data);
+      setConfig(initializedData);
+      setEditedConfig(initializedData);
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -34,17 +36,69 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({ remoteClient }) => {
   const saveConfig = async () => {
     if (!remoteClient || !editedConfig) return;
     
+    // Validate AI configuration if enabled
+    if (editedConfig.features?.ai && editedConfig.ai?.enabled) {
+      if (!editedConfig.ai.apiKey?.trim()) {
+        setError('API Key is required when AI features are enabled');
+        return;
+      }
+      
+      if (editedConfig.ai.provider === 'custom' && !editedConfig.ai.endpoint?.trim()) {
+        setError('Custom endpoint is required for custom providers');
+        return;
+      }
+      
+      if (editedConfig.ai.provider === 'azure-openai' && !editedConfig.ai.endpoint?.trim()) {
+        setError('Azure endpoint is required for Azure OpenAI');
+        return;
+      }
+    }
+    
     try {
       setSaving(true);
       setError(null);
       await remoteClient.updateConfig(editedConfig);
       setConfig(editedConfig);
       setHasChanges(false);
+      
+      // Notify parent that configuration was updated
+      if (onConfigUpdate) {
+        onConfigUpdate();
+      }
     } catch (err) {
       setError((err as Error).message);
     } finally {
       setSaving(false);
     }
+  };
+
+  const initializeAIConfig = (config: WorkspaceConfig) => {
+    if (!config.ai) {
+      config.ai = {
+        enabled: false,
+        provider: 'openai',
+        apiKey: '',
+        temperature: 0.7,
+        features: {
+          taskGeneration: false,
+          acceptanceCriteria: false,
+          technicalTasks: false,
+          storyPointEstimation: false,
+          dependencyAnalysis: false,
+          sprintPlanning: false,
+        }
+      };
+    } else if (!config.ai.features) {
+      config.ai.features = {
+        taskGeneration: false,
+        acceptanceCriteria: false,
+        technicalTasks: false,
+        storyPointEstimation: false,
+        dependencyAnalysis: false,
+        sprintPlanning: false,
+      };
+    }
+    return config;
   };
 
   const handleConfigChange = (path: string[], value: any) => {
@@ -53,7 +107,7 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({ remoteClient }) => {
     setEditedConfig(prev => {
       if (!prev) return prev;
       
-      const newConfig = { ...prev };
+      const newConfig = initializeAIConfig({ ...prev });
       let current: any = newConfig;
       
       for (let i = 0; i < path.length - 1; i++) {
@@ -74,7 +128,8 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({ remoteClient }) => {
   };
 
   const resetChanges = () => {
-    setEditedConfig(config);
+    const initializedConfig = config ? initializeAIConfig({ ...config }) : null;
+    setEditedConfig(initializedConfig);
     setHasChanges(false);
   };
 

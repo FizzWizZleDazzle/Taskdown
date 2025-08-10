@@ -208,18 +208,41 @@ export interface ActivityResponse {
   hasMore: boolean;
 }
 
+// AI Provider types
+export type AIProvider = 'openai' | 'anthropic' | 'azure-openai' | 'custom';
+
+export interface AIConfig {
+  enabled: boolean;
+  provider: AIProvider;
+  apiKey: string;
+  endpoint?: string; // For custom providers or Azure
+  model?: string; // Model name (e.g., "gpt-4", "claude-3-opus")
+  maxTokens?: number;
+  temperature?: number;
+  features: {
+    taskGeneration: boolean;
+    acceptanceCriteria: boolean;
+    technicalTasks: boolean;
+    storyPointEstimation: boolean;
+    dependencyAnalysis: boolean;
+    sprintPlanning: boolean;
+  };
+}
+
 // Configuration types
 export interface WorkspaceFeatures {
   realtime: boolean;
   analytics: boolean;
   webhooks: boolean;
   customFields: boolean;
+  ai: boolean;
 }
 
 export interface WorkspaceLimits {
   maxTasks: number;
   maxUsers: number;
   apiRateLimit: number;
+  aiRequestsPerDay?: number;
 }
 
 export interface WorkspaceConfig {
@@ -228,6 +251,7 @@ export interface WorkspaceConfig {
   dateFormat: string;
   features: WorkspaceFeatures;
   limits: WorkspaceLimits;
+  ai?: AIConfig;
 }
 
 // Enhanced Health Monitoring types
@@ -270,4 +294,79 @@ export interface PaginatedResponse<T> {
   hasMore: boolean;
   limit?: number;
   offset?: number;
+}
+
+// AI service types
+export interface AITaskGenerationRequest {
+  title: string;
+  type?: TaskType;
+  context?: string; // Additional context about the task
+  epic?: string; // Epic context
+}
+
+export interface AITaskGenerationResponse {
+  suggestedTitle?: string;
+  description: string;
+  acceptanceCriteria: string[];
+  technicalTasks: string[];
+  estimatedStoryPoints?: number;
+  suggestedType?: TaskType;
+  suggestedPriority?: Priority;
+  dependencies?: string[];
+}
+
+export interface AIAcceptanceCriteriaRequest {
+  title: string;
+  description: string;
+  type: TaskType;
+  existingCriteria?: string[];
+}
+
+export interface AIStoryPointEstimationRequest {
+  title: string;
+  description: string;
+  acceptanceCriteria: string[];
+  technicalTasks: string[];
+  type: TaskType;
+}
+
+export interface AIDependencyAnalysisRequest {
+  task: {
+    id: string;
+    title: string;
+    description: string;
+    type: TaskType;
+  };
+  existingTasks: Array<{
+    id: string;
+    title: string;
+    description: string;
+    type: TaskType;
+    status: TaskStatus;
+  }>;
+}
+
+export interface AIDependencyAnalysisResponse {
+  dependencies: string[];
+  blocks: string[];
+  reasoning: string;
+}
+
+export interface AISprintPlanningRequest {
+  tasks: Array<{
+    id: string;
+    title: string;
+    storyPoints?: number;
+    priority: Priority;
+    dependencies: string[];
+  }>;
+  sprintCapacity: number;
+  sprintGoal?: string;
+}
+
+export interface AISprintPlanningResponse {
+  recommendedTasks: string[];
+  reasoning: string;
+  totalStoryPoints: number;
+  warnings?: string[];
 }

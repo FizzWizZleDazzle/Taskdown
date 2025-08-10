@@ -41,6 +41,7 @@ const App: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [workspaceConfig, setWorkspaceConfig] = useState<any>(null);
   
   // State for board-level editing state
   const [editingState, setEditingState] = useState({
@@ -67,6 +68,22 @@ const App: React.FC = () => {
         // Load tasks
         const workspaceTasks = await service.getTasks();
         setTasks(workspaceTasks);
+        
+        // Load workspace configuration for remote workspaces
+        if (service.isRemote() && service.getRemoteClient) {
+          try {
+            const remoteClient = service.getRemoteClient();
+            if (remoteClient) {
+              const config = await remoteClient.getConfig();
+              setWorkspaceConfig(config);
+            }
+          } catch (configError) {
+            console.warn('Could not load workspace configuration:', configError);
+            setWorkspaceConfig(null);
+          }
+        } else {
+          setWorkspaceConfig(null);
+        }
         
         // Update workspace connection status if it's remote
         if (service.isRemote()) {
@@ -156,6 +173,21 @@ const App: React.FC = () => {
     } catch (error) {
       console.error('Error deleting task:', error);
       alert(`Failed to delete task: ${(error as Error).message}`);
+    }
+  };
+
+  const handleWorkspaceConfigUpdate = async () => {
+    // Refresh workspace configuration after it's been updated
+    if (dataService?.isRemote() && dataService.getRemoteClient) {
+      try {
+        const remoteClient = dataService.getRemoteClient();
+        if (remoteClient) {
+          const config = await remoteClient.getConfig();
+          setWorkspaceConfig(config);
+        }
+      } catch (configError) {
+        console.warn('Could not refresh workspace configuration:', configError);
+      }
     }
   };
 
@@ -355,6 +387,8 @@ const App: React.FC = () => {
         onExport={handleExport}
         currentWorkspace={currentWorkspace}
         onShowSettings={() => setShowSettings(true)}
+        remoteClient={dataService?.getRemoteClient?.()}
+        aiEnabled={workspaceConfig?.features?.ai && workspaceConfig?.ai?.enabled}
       />
       
       {/* Settings Modal for Remote Workspaces */}
@@ -362,6 +396,7 @@ const App: React.FC = () => {
         <Dashboard
           remoteClient={dataService?.getRemoteClient?.()}
           onClose={() => setShowSettings(false)}
+          onConfigUpdate={handleWorkspaceConfigUpdate}
         />
       )}
       

@@ -14,6 +14,7 @@ import {
 import { Task, ColumnType, TaskStatus, Workspace } from '../types';
 import { TASK_STATUSES, COLUMN_TYPES, COLORS } from '../constants';
 import { filterTasks, hasActiveSearchOrFilter } from '../filterUtils';
+import { IRemoteWorkspaceClient } from '../remoteClient';
 import Card from './Card';
 import TaskModal from './TaskModal';
 import SearchAndFilter from './SearchAndFilter';
@@ -56,6 +57,8 @@ interface BoardProps {
   onExport: () => void;
   currentWorkspace?: Workspace;
   onShowSettings?: () => void;
+  remoteClient?: IRemoteWorkspaceClient;
+  aiEnabled?: boolean;
 }
 
 interface DroppableColumnProps {
@@ -131,7 +134,9 @@ const Board: React.FC<BoardProps> = ({
   onFileImport,
   onExport,
   currentWorkspace,
-  onShowSettings
+  onShowSettings,
+  remoteClient,
+  aiEnabled = false
 }) => {
   const [columnType, setColumnType] = useState<ColumnType>(COLUMN_TYPES.STATUS);
   const [searchAndFilter, setSearchAndFilter] = useState<SearchAndFilterState>(defaultSearchAndFilterState);
@@ -524,6 +529,8 @@ const Board: React.FC<BoardProps> = ({
             existingEpics={Array.from(new Set(tasks.map(t => t.epic).filter(Boolean)))}
             existingTaskIds={tasks.map(t => t.id)}
             currentWorkspace={currentWorkspace}
+            remoteClient={remoteClient}
+            aiEnabled={aiEnabled}
           />
         )}
 

@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Task, TaskType, Priority, TaskStatus, ChecklistItem, Workspace } from '../types';
 import { TASK_TYPES, PRIORITIES, TASK_STATUSES, DEFAULT_FORM_DATA } from '../constants';
+import { useAIService } from '../hooks/useAIService';
+import { IRemoteWorkspaceClient } from '../remoteClient';
 import Checklist from './Checklist';
 import './TaskModal.css';
 
@@ -13,6 +15,8 @@ interface TaskModalProps {
   existingEpics?: string[];
   existingTaskIds?: string[];
   currentWorkspace?: Workspace;
+  remoteClient?: IRemoteWorkspaceClient;
+  aiEnabled?: boolean;
 }
 
 const TaskModal: React.FC<TaskModalProps> = ({ 
@@ -23,7 +27,9 @@ const TaskModal: React.FC<TaskModalProps> = ({
   isCreating,
   existingEpics = [],
   existingTaskIds = [],
-  currentWorkspace
+  currentWorkspace,
+  remoteClient,
+  aiEnabled = false
 }) => {
   const [formData, setFormData] = useState({
     id: '',
@@ -47,6 +53,100 @@ const TaskModal: React.FC<TaskModalProps> = ({
   const [dependencyInput, setDependencyInput] = useState('');
   const [blockInput, setBlockInput] = useState('');
   const [idError, setIdError] = useState('');
+
+  // AI Service
+  const aiService = useAIService(remoteClient);
+
+  // AI assistance functions
+  const handleAIGenerateTask = useCallback(async () => {
+    if (!formData.title.trim()) {
+      alert('Please enter a task title first');
+      return;
+    }
+
+    const result = await aiService.generateTaskDetails({
+      title: formData.title,
+      type: formData.type,
+      context: formData.description,
+      epic: formData.epic
+    });
+
+    if (result) {
+      if (result.description) {
+        setFormData(prev => ({ ...prev, description: result.description }));
+      }
+      if (result.suggestedTitle && result.suggestedTitle !== formData.title) {
+        setFormData(prev => ({ ...prev, title: result.suggestedTitle }));
+      }
+      if (result.suggestedType) {
+        setFormData(prev => ({ ...prev, type: result.suggestedType }));
+      }
+      if (result.suggestedPriority) {
+        setFormData(prev => ({ ...prev, priority: result.suggestedPriority }));
+      }
+      if (result.estimatedStoryPoints !== undefined) {
+        setFormData(prev => ({ ...prev, storyPoints: result.estimatedStoryPoints }));
+      }
+      if (result.acceptanceCriteria.length > 0) {
+        const newCriteria = result.acceptanceCriteria.map(text => ({ 
+          text, 
+          completed: false,
+          id: `ai-ac-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+        }));
+        setAcceptanceCriteria(prev => [...prev, ...newCriteria]);
+      }
+      if (result.technicalTasks.length > 0) {
+        const newTasks = result.technicalTasks.map(text => ({ 
+          text, 
+          completed: false,
+          id: `ai-tt-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+        }));
+        setTechnicalTasks(prev => [...prev, ...newTasks]);
+      }
+    }
+  }, [formData.title, formData.type, formData.description, formData.epic, aiService]);
+
+  const handleAIGenerateAcceptanceCriteria = useCallback(async () => {
+    if (!formData.title.trim()) {
+      alert('Please enter a task title first');
+      return;
+    }
+
+    const result = await aiService.generateAcceptanceCriteria({
+      title: formData.title,
+      description: formData.description,
+      type: formData.type,
+      existingCriteria: acceptanceCriteria.map(item => item.text)
+    });
+
+    if (result && result.length > 0) {
+      const newCriteria = result.map(text => ({ 
+        text, 
+        completed: false,
+        id: `ai-ac-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      }));
+      setAcceptanceCriteria(prev => [...prev, ...newCriteria]);
+    }
+  }, [formData.title, formData.description, formData.type, acceptanceCriteria, aiService]);
+
+  const handleAIEstimateStoryPoints = useCallback(async () => {
+    if (!formData.title.trim()) {
+      alert('Please enter a task title first');
+      return;
+    }
+
+    const result = await aiService.estimateStoryPoints({
+      title: formData.title,
+      description: formData.description,
+      acceptanceCriteria: acceptanceCriteria.map(item => item.text),
+      technicalTasks: technicalTasks.map(item => item.text),
+      type: formData.type
+    });
+
+    if (result !== null) {
+      setFormData(prev => ({ ...prev, storyPoints: result }));
+    }
+  }, [formData.title, formData.description, formData.type, acceptanceCriteria, technicalTasks, aiService]);
 
   useEffect(() => {
     if (task) {
@@ -189,6 +289,13 @@ const TaskModal: React.FC<TaskModalProps> = ({
           </button>
         </div>
 
+        {aiService.state.error && (
+          <div className="ai-error-message">
+            <span>AI Error: {aiService.state.error}</span>
+            <button type="button" onClick={aiService.clearError}>×</button>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="task-form">
           <div className="form-grid">
             <div className="form-group">
@@ -258,7 +365,20 @@ const TaskModal: React.FC<TaskModalProps> = ({
             </div>
 
             <div className="form-group">
-              <label htmlFor="storyPoints">Story Points</label>
+              <div className="field-with-ai">
+                <label htmlFor="storyPoints">Story Points</label>
+                {aiEnabled && (
+                  <button 
+                    type="button" 
+                    className="ai-assist-btn small"
+                    onClick={handleAIEstimateStoryPoints}
+                    disabled={aiService.state.loading}
+                    title="Estimate story points with AI"
+                  >
+                    {aiService.state.loading ? '⏳' : '🤖'} AI Estimate
+                  </button>
+                )}
+              </div>
               <input
                 id="storyPoints"
                 type="number"
@@ -333,7 +453,20 @@ const TaskModal: React.FC<TaskModalProps> = ({
           </div>
 
           <div className="form-group full-width">
-            <label htmlFor="description">Description</label>
+            <div className="field-with-ai">
+              <label htmlFor="description">Description</label>
+              {aiEnabled && (
+                <button 
+                  type="button" 
+                  className="ai-assist-btn"
+                  onClick={handleAIGenerateTask}
+                  disabled={aiService.state.loading}
+                  title="Generate task details with AI"
+                >
+                  {aiService.state.loading ? '⏳' : '🤖'} AI Generate
+                </button>
+              )}
+            </div>
             <textarea
               id="description"
               value={formData.description}
@@ -344,8 +477,22 @@ const TaskModal: React.FC<TaskModalProps> = ({
           </div>
 
           <div className="checklist-section">
+            <div className="field-with-ai">
+              <h3>Acceptance Criteria</h3>
+              {aiEnabled && (
+                <button 
+                  type="button" 
+                  className="ai-assist-btn small"
+                  onClick={handleAIGenerateAcceptanceCriteria}
+                  disabled={aiService.state.loading}
+                  title="Generate acceptance criteria with AI"
+                >
+                  {aiService.state.loading ? '⏳' : '🤖'} AI Suggest
+                </button>
+              )}
+            </div>
             <Checklist
-              title="Acceptance Criteria"
+              title=""
               items={acceptanceCriteria}
               onChange={setAcceptanceCriteria}
             />

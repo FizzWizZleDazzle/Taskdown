@@ -132,7 +132,10 @@ impl OpenAIProvider {
         }
     }
 
-    pub async fn generate_task_details(&self, request: &AITaskGenerationRequest) -> Result<AITaskGenerationResponse> {
+    pub async fn generate_task_details(
+        &self,
+        request: &AITaskGenerationRequest,
+    ) -> Result<AITaskGenerationResponse> {
         let prompt = format!(
             "You are an expert project manager helping to generate detailed task information. \
              Given the task title '{}' and type '{}', please generate: \
@@ -155,7 +158,10 @@ impl OpenAIProvider {
              }}",
             request.title,
             request.task_type.as_deref().unwrap_or("Story"),
-            request.context.as_deref().unwrap_or("No additional context"),
+            request
+                .context
+                .as_deref()
+                .unwrap_or("No additional context"),
             request.epic.as_deref().unwrap_or("No epic specified")
         );
 
@@ -163,8 +169,12 @@ impl OpenAIProvider {
         self.parse_task_generation_response(&response)
     }
 
-    pub async fn generate_acceptance_criteria(&self, request: &AIAcceptanceCriteriaRequest) -> Result<Vec<String>> {
-        let existing_criteria_text = request.existing_criteria
+    pub async fn generate_acceptance_criteria(
+        &self,
+        request: &AIAcceptanceCriteriaRequest,
+    ) -> Result<Vec<String>> {
+        let existing_criteria_text = request
+            .existing_criteria
             .as_ref()
             .map(|criteria| format!("Existing criteria: {}", criteria.join(", ")))
             .unwrap_or_else(|| "No existing criteria".to_string());
@@ -175,17 +185,17 @@ impl OpenAIProvider {
              {} \
              \
              Return only a JSON array of strings, like: [\"criterion 1\", \"criterion 2\", ...]",
-            request.task_type,
-            request.title,
-            request.description,
-            existing_criteria_text
+            request.task_type, request.title, request.description, existing_criteria_text
         );
 
         let response = self.call_openai(&prompt).await?;
         self.parse_array_response(&response)
     }
 
-    pub async fn estimate_story_points(&self, request: &AIStoryPointEstimationRequest) -> Result<u32> {
+    pub async fn estimate_story_points(
+        &self,
+        request: &AIStoryPointEstimationRequest,
+    ) -> Result<u32> {
         let prompt = format!(
             "Estimate story points (1-13 scale) for this {} task: \
              Title: {} \
@@ -231,7 +241,10 @@ impl OpenAIProvider {
         let mut response = Fetch::Request(request).send().await?;
 
         if response.status_code() != 200 {
-            return Err(Error::from(format!("OpenAI API error: {}", response.status_code())));
+            return Err(Error::from(format!(
+                "OpenAI API error: {}",
+                response.status_code()
+            )));
         }
 
         let response_text = response.text().await?;
@@ -254,11 +267,19 @@ impl OpenAIProvider {
             description: parsed["description"].as_str().unwrap_or("").to_string(),
             acceptance_criteria: parsed["acceptanceCriteria"]
                 .as_array()
-                .map(|arr| arr.iter().filter_map(|v| v.as_str().map(|s| s.to_string())).collect())
+                .map(|arr| {
+                    arr.iter()
+                        .filter_map(|v| v.as_str().map(|s| s.to_string()))
+                        .collect()
+                })
                 .unwrap_or_default(),
             technical_tasks: parsed["technicalTasks"]
                 .as_array()
-                .map(|arr| arr.iter().filter_map(|v| v.as_str().map(|s| s.to_string())).collect())
+                .map(|arr| {
+                    arr.iter()
+                        .filter_map(|v| v.as_str().map(|s| s.to_string()))
+                        .collect()
+                })
                 .unwrap_or_default(),
             estimated_story_points: parsed["estimatedStoryPoints"].as_u64().map(|n| n as u32),
             suggested_type: None,
@@ -275,7 +296,8 @@ impl OpenAIProvider {
 
     fn parse_number_response(&self, response: &str) -> Result<u32> {
         let cleaned = response.trim();
-        cleaned.parse::<u32>()
+        cleaned
+            .parse::<u32>()
             .map_err(|e| Error::from(format!("Failed to parse number response: {}", e)))
     }
 }
@@ -283,19 +305,11 @@ impl OpenAIProvider {
 pub async fn get_ai_provider(env: &Env) -> Result<Option<OpenAIProvider>> {
     // Get AI configuration from environment or database
     // For now, we'll check for environment variables
-    if let (Ok(api_key), Ok(enabled)) = (
-        env.secret("AI_API_KEY"),
-        env.var("AI_ENABLED")
-    ) {
+    if let (Ok(api_key), Ok(enabled)) = (env.secret("AI_API_KEY"), env.var("AI_ENABLED")) {
         if enabled.to_string() == "true" {
-            let model = env.var("AI_MODEL")
-                .map(|v| v.to_string())
-                .ok();
-            
-            return Ok(Some(OpenAIProvider::new(
-                api_key.to_string(),
-                model
-            )));
+            let model = env.var("AI_MODEL").map(|v| v.to_string()).ok();
+
+            return Ok(Some(OpenAIProvider::new(api_key.to_string(), model)));
         }
     }
 

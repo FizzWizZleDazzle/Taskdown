@@ -1,7 +1,7 @@
-use worker::*;
-use serde::{Deserialize, Serialize};
-use chrono::{Utc, Duration};
 use crate::config::AuthConfig;
+use chrono::{Duration, Utc};
+use serde::{Deserialize, Serialize};
+use worker::*;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
@@ -13,7 +13,12 @@ pub struct Claims {
 }
 
 impl Claims {
-    pub fn new(user_id: String, username: String, permissions: Vec<String>, expires_in_hours: i64) -> Self {
+    pub fn new(
+        user_id: String,
+        username: String,
+        permissions: Vec<String>,
+        expires_in_hours: i64,
+    ) -> Self {
         let now = Utc::now();
         Self {
             sub: user_id,
@@ -38,7 +43,7 @@ impl AuthService {
         if !self.config.require_api_key {
             return true;
         }
-        
+
         self.config.api_keys.contains(&api_key.to_string())
     }
 
@@ -54,8 +59,13 @@ impl AuthService {
 
     pub fn create_session_token(&self, user_id: String, username: String) -> String {
         let permissions = self.get_user_permissions(&username);
-        let claims = Claims::new(user_id, username, permissions, self.config.session_duration_hours);
-        
+        let claims = Claims::new(
+            user_id,
+            username,
+            permissions,
+            self.config.session_duration_hours,
+        );
+
         // In a real implementation, you would use a proper JWT library
         // For this example, we create a simple encoded token
         format!("session_{}_{}_{}", claims.sub, claims.username, claims.exp)
@@ -83,7 +93,7 @@ impl AuthService {
         }
 
         let permissions = self.get_user_permissions(&username);
-        
+
         Ok(Claims {
             sub: user_id,
             username,
@@ -116,7 +126,9 @@ impl AuthService {
     }
 
     pub fn require_permission(&self, claims: &Claims, required_permission: &str) -> bool {
-        claims.permissions.contains(&required_permission.to_string()) || 
-        claims.permissions.contains(&"admin".to_string())
+        claims
+            .permissions
+            .contains(&required_permission.to_string())
+            || claims.permissions.contains(&"admin".to_string())
     }
 }

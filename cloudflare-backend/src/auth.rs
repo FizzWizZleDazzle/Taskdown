@@ -119,4 +119,15 @@ impl AuthService {
         claims.permissions.contains(&required_permission.to_string()) || 
         claims.permissions.contains(&"admin".to_string())
     }
+
+    pub async fn from_request(req: &Request, env: &Env) -> std::result::Result<Claims, String> {
+        let config = crate::config::get_auth_config();
+        let auth_service = AuthService::new(config);
+        
+        if let Some(token) = auth_service.extract_auth_header(req) {
+            auth_service.verify_session_token(&token)
+        } else {
+            Err("No authorization header found".to_string())
+        }
+    }
 }

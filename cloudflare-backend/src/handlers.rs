@@ -3,6 +3,9 @@ use crate::models::*;
 use crate::database::Database;
 use crate::auth::{AuthService, Claims};
 use crate::config::{get_auth_config};
+use crate::ai::{get_ai_provider, AITaskGenerationRequest, AIAcceptanceCriteriaRequest, 
+               AIStoryPointEstimationRequest, AIDependencyAnalysisRequest, 
+               AIDependencyAnalysisResponse, AISprintPlanningRequest, AISprintPlanningResponse};
 use chrono::Utc;
 use uuid::Uuid;
 
@@ -72,8 +75,8 @@ pub async fn auth_verify_handler(mut req: Request, _ctx: RouteContext<()>) -> Re
         Response::from_json(&ApiResponse::success(auth_response))
     } else {
         Response::from_json(&ApiResponse::<()>::error(
-            "INVALID_CREDENTIALS".to_string(),
-            "Invalid username/password or API key".to_string(),
+            "INVALID_CREDENTIALS",
+            "Invalid username/password or API key",
         ))
     }
 }
@@ -95,8 +98,8 @@ pub async fn auth_status_handler(req: Request, _ctx: RouteContext<()>) -> Result
             }
             Err(e) => {
                 Response::from_json(&ApiResponse::<()>::error(
-                    "INVALID_SESSION".to_string(),
-                    e.to_string(),
+                    "INVALID_SESSION",
+                    e,
                 ))
             }
         }
@@ -133,8 +136,8 @@ pub async fn auth_register_handler(mut req: Request, _ctx: RouteContext<()>) -> 
     // In a real system, you would store the user in a database
     if register_request.username.trim().is_empty() || !is_password_complex(&register_request.password) {
         return Response::from_json(&ApiResponse::<()>::error(
-            "VALIDATION_ERROR".to_string(),
-            "Username is required and password must be at least 6 characters, including uppercase, lowercase, number, and special character.".to_string(),
+            "VALIDATION_ERROR",
+            "Username is required and password must be at least 6 characters, including uppercase, lowercase, number, and special character.",
         ));
     }
 
@@ -142,17 +145,17 @@ pub async fn auth_register_handler(mut req: Request, _ctx: RouteContext<()>) -> 
     // Check if user already exists (hardcoded for demo)
     if register_request.username == "admin" || register_request.username == "user" {
         return Response::from_json(&ApiResponse::<()>::error(
-            "USER_EXISTS".to_string(),
-            "Username already exists".to_string(),
+            "USER_EXISTS",
+            "Username already exists",
         ));
     }
 
     let user = User {
-        id: Uuid::new_v4().to_string(),
+        id: Uuid::new_v4(),
         username: register_request.username.clone(),
         display_name: register_request.display_name.clone().unwrap_or_else(|| register_request.username.clone()),
         email: register_request.email.clone(),
-        role: "user".to_string(),
+        role: "user",
         active: true,
         created_at: Utc::now(),
         updated_at: Utc::now(),
@@ -183,21 +186,21 @@ pub async fn registration_page_handler(req: Request, _ctx: RouteContext<()>) -> 
 // Workspace handlers
 pub async fn workspace_info_handler(_: Request, _ctx: RouteContext<()>) -> Result<Response> {
     let workspace = WorkspaceInfo {
-        id: "cloudflare-workspace".to_string(),
-        name: "Taskdown Cloudflare Workspace".to_string(),
+        id: "cloudflare-workspace",
+        name: "Taskdown Cloudflare Workspace",
         description: Some("A Cloudflare Workers-based workspace for Taskdown".to_string()),
-        server_version: "0.1.0".to_string(),
+        server_version: "0.1.0",
         capabilities: vec![
-            "sync".to_string(),
-            "auth".to_string(),
-            "tasks".to_string(),
-            "analytics".to_string(),
+            "sync",
+            "auth",
+            "tasks",
+            "analytics",
         ],
         last_updated: Utc::now(),
         owner: WorkspaceOwner {
-            id: "admin".to_string(),
-            username: "admin".to_string(),
-            display_name: "Administrator".to_string(),
+            id: "admin",
+            username: "admin",
+            display_name: "Administrator",
             email: Some("admin@example.com".to_string()),
         },
         permissions: WorkspacePermissions {
@@ -218,8 +221,8 @@ pub async fn tasks_list_handler(req: Request, ctx: RouteContext<()>) -> Result<R
         Ok(claims) => claims,
         Err(_) => {
             return Response::from_json(&ApiResponse::<()>::error(
-                "UNAUTHORIZED".to_string(),
-                "Authentication required".to_string(),
+                "UNAUTHORIZED",
+                "Authentication required",
             ));
         }
     };
@@ -227,8 +230,8 @@ pub async fn tasks_list_handler(req: Request, ctx: RouteContext<()>) -> Result<R
     // Check read permission
     if let Err(_) = require_permission(&claims, "read") {
         return Response::from_json(&ApiResponse::<()>::error(
-            "FORBIDDEN".to_string(),
-            "Read permission required".to_string(),
+            "FORBIDDEN",
+            "Read permission required",
         ));
     }
 
@@ -250,8 +253,8 @@ pub async fn tasks_list_handler(req: Request, ctx: RouteContext<()>) -> Result<R
     match db.list_tasks(&query).await {
         Ok(tasks) => Response::from_json(&ApiResponse::success(tasks)),
         Err(e) => Response::from_json(&ApiResponse::<()>::error(
-            "DATABASE_ERROR".to_string(),
-            e.to_string(),
+            "DATABASE_ERROR",
+            e,
         )),
     }
 }
@@ -262,8 +265,8 @@ pub async fn tasks_create_handler(mut req: Request, ctx: RouteContext<()>) -> Re
         Ok(claims) => claims,
         Err(_) => {
             return Response::from_json(&ApiResponse::<()>::error(
-                "UNAUTHORIZED".to_string(),
-                "Authentication required".to_string(),
+                "UNAUTHORIZED",
+                "Authentication required",
             ));
         }
     };
@@ -271,8 +274,8 @@ pub async fn tasks_create_handler(mut req: Request, ctx: RouteContext<()>) -> Re
     // Check write permission
     if let Err(_) = require_permission(&claims, "write") {
         return Response::from_json(&ApiResponse::<()>::error(
-            "FORBIDDEN".to_string(),
-            "Write permission required".to_string(),
+            "FORBIDDEN",
+            "Write permission required",
         ));
     }
 
@@ -280,8 +283,8 @@ pub async fn tasks_create_handler(mut req: Request, ctx: RouteContext<()>) -> Re
         Ok(req) => req,
         Err(e) => {
             return Response::from_json(&ApiResponse::<()>::error(
-                "INVALID_REQUEST".to_string(),
-                format!("Invalid JSON: {}", e),
+                "INVALID_REQUEST",
+                "Invalid JSON",
             ));
         }
     };
@@ -290,8 +293,8 @@ pub async fn tasks_create_handler(mut req: Request, ctx: RouteContext<()>) -> Re
     match db.create_task(create_request).await {
         Ok(task) => Response::from_json(&ApiResponse::success(task)),
         Err(e) => Response::from_json(&ApiResponse::<()>::error(
-            "DATABASE_ERROR".to_string(),
-            e.to_string(),
+            "DATABASE_ERROR",
+            e,
         )),
     }
 }
@@ -301,8 +304,8 @@ pub async fn tasks_get_handler(_req: Request, ctx: RouteContext<()>) -> Result<R
         Some(id) => id,
         None => {
             return Response::from_json(&ApiResponse::<()>::error(
-                "MISSING_PARAMETER".to_string(),
-                "Task ID is required".to_string(),
+                "MISSING_PARAMETER",
+                "Task ID is required",
             ));
         }
     };
@@ -311,8 +314,8 @@ pub async fn tasks_get_handler(_req: Request, ctx: RouteContext<()>) -> Result<R
     match db.get_task(id).await {
         Ok(task) => Response::from_json(&ApiResponse::success(task)),
         Err(e) => Response::from_json(&ApiResponse::<()>::error(
-            "NOT_FOUND".to_string(),
-            format!("Task not found: {}", e),
+            "NOT_FOUND",
+            "Task not found",
         )),
     }
 }
@@ -322,8 +325,8 @@ pub async fn tasks_update_handler(mut req: Request, ctx: RouteContext<()>) -> Re
         Some(id) => id,
         None => {
             return Response::from_json(&ApiResponse::<()>::error(
-                "MISSING_PARAMETER".to_string(),
-                "Task ID is required".to_string(),
+                "MISSING_PARAMETER",
+                "Task ID is required",
             ));
         }
     };
@@ -332,8 +335,8 @@ pub async fn tasks_update_handler(mut req: Request, ctx: RouteContext<()>) -> Re
         Ok(req) => req,
         Err(e) => {
             return Response::from_json(&ApiResponse::<()>::error(
-                "INVALID_REQUEST".to_string(),
-                format!("Invalid JSON: {}", e),
+                "INVALID_REQUEST",
+                "Invalid JSON",
             ));
         }
     };
@@ -342,8 +345,8 @@ pub async fn tasks_update_handler(mut req: Request, ctx: RouteContext<()>) -> Re
     match db.update_task(id, update_request).await {
         Ok(task) => Response::from_json(&ApiResponse::success(task)),
         Err(e) => Response::from_json(&ApiResponse::<()>::error(
-            "DATABASE_ERROR".to_string(),
-            e.to_string(),
+            "DATABASE_ERROR",
+            e,
         )),
     }
 }
@@ -353,8 +356,8 @@ pub async fn tasks_delete_handler(_req: Request, ctx: RouteContext<()>) -> Resul
         Some(id) => id,
         None => {
             return Response::from_json(&ApiResponse::<()>::error(
-                "MISSING_PARAMETER".to_string(),
-                "Task ID is required".to_string(),
+                "MISSING_PARAMETER",
+                "Task ID is required",
             ));
         }
     };
@@ -363,8 +366,8 @@ pub async fn tasks_delete_handler(_req: Request, ctx: RouteContext<()>) -> Resul
     match db.delete_task(id).await {
         Ok(_) => Response::from_json(&ApiResponse::success(())),
         Err(e) => Response::from_json(&ApiResponse::<()>::error(
-            "DATABASE_ERROR".to_string(),
-            e.to_string(),
+            "DATABASE_ERROR",
+            e,
         )),
     }
 }
@@ -374,15 +377,15 @@ pub async fn tasks_bulk_handler(mut req: Request, _ctx: RouteContext<()>) -> Res
         Ok(req) => req,
         Err(e) => {
             return Response::from_json(&ApiResponse::<()>::error(
-                "INVALID_REQUEST".to_string(),
-                format!("Invalid JSON: {}", e),
+                "INVALID_REQUEST",
+                "Invalid JSON",
             ));
         }
     };
 
     // For now, return a simple response
     let response = BulkOperationResponse {
-        operation: "bulk".to_string(),
+        operation: "bulk",
         successful_count: 0,
         failed_count: 0,
         errors: vec!["Bulk operations not yet implemented".to_string()],
@@ -397,8 +400,8 @@ pub async fn import_markdown_handler(mut req: Request, _ctx: RouteContext<()>) -
         Ok(req) => req,
         Err(e) => {
             return Response::from_json(&ApiResponse::<()>::error(
-                "INVALID_REQUEST".to_string(),
-                format!("Invalid JSON: {}", e),
+                "INVALID_REQUEST",
+                "Invalid JSON",
             ));
         }
     };
@@ -415,8 +418,8 @@ pub async fn import_markdown_handler(mut req: Request, _ctx: RouteContext<()>) -
 
 pub async fn export_markdown_handler(_req: Request, _ctx: RouteContext<()>) -> Result<Response> {
     let response = ExportResponse {
-        content: "# Taskdown Export\n\n*Export functionality not yet implemented*".to_string(),
-        format: "markdown".to_string(),
+        content: "# Taskdown Export\n\n*Export functionality not yet implemented*",
+        format: "markdown",
         exported_at: Utc::now(),
     };
 
@@ -460,15 +463,15 @@ pub async fn users_create_handler(mut req: Request, _ctx: RouteContext<()>) -> R
         Ok(req) => req,
         Err(e) => {
             return Response::from_json(&ApiResponse::<()>::error(
-                "INVALID_REQUEST".to_string(),
-                format!("Invalid JSON: {}", e),
+                "INVALID_REQUEST",
+                "Invalid JSON",
             ));
         }
     };
 
     Response::from_json(&ApiResponse::<()>::error(
-        "NOT_IMPLEMENTED".to_string(),
-        "User creation not yet implemented".to_string(),
+        "NOT_IMPLEMENTED",
+        "User creation not yet implemented",
     ))
 }
 
@@ -478,15 +481,15 @@ pub async fn users_update_handler(mut req: Request, ctx: RouteContext<()>) -> Re
         Ok(req) => req,
         Err(e) => {
             return Response::from_json(&ApiResponse::<()>::error(
-                "INVALID_REQUEST".to_string(),
-                format!("Invalid JSON: {}", e),
+                "INVALID_REQUEST",
+                "Invalid JSON",
             ));
         }
     };
 
     Response::from_json(&ApiResponse::<()>::error(
-        "NOT_IMPLEMENTED".to_string(),
-        "User update not yet implemented".to_string(),
+        "NOT_IMPLEMENTED",
+        "User update not yet implemented",
     ))
 }
 
@@ -494,8 +497,8 @@ pub async fn users_delete_handler(_req: Request, ctx: RouteContext<()>) -> Resul
     let _id = ctx.param("id");
 
     Response::from_json(&ApiResponse::<()>::error(
-        "NOT_IMPLEMENTED".to_string(),
-        "User deletion not yet implemented".to_string(),
+        "NOT_IMPLEMENTED",
+        "User deletion not yet implemented",
     ))
 }
 
@@ -508,7 +511,7 @@ pub async fn activity_handler(_req: Request, _ctx: RouteContext<()>) -> Result<R
 // Configuration handlers
 pub async fn config_get_handler(_req: Request, _ctx: RouteContext<()>) -> Result<Response> {
     let config = WorkspaceConfig {
-        name: "Taskdown Cloudflare Workspace".to_string(),
+        name: "Taskdown Cloudflare Workspace",
         description: Some("A Cloudflare Workers-based workspace".to_string()),
         default_task_type: TaskType::Task,
         available_statuses: vec![
@@ -526,7 +529,7 @@ pub async fn config_get_handler(_req: Request, _ctx: RouteContext<()>) -> Result
         enable_story_points: true,
         enable_sprints: true,
         enable_epics: true,
-        theme: "default".to_string(),
+        theme: "default",
     };
 
     Response::from_json(&ApiResponse::success(config))
@@ -535,17 +538,17 @@ pub async fn config_get_handler(_req: Request, _ctx: RouteContext<()>) -> Result
 pub async fn config_update_handler(mut req: Request, _ctx: RouteContext<()>) -> Result<Response> {
     let _config: WorkspaceConfig = match req.json().await {
         Ok(config) => config,
-        Err(e) => {
+        Err(_e) => {
             return Response::from_json(&ApiResponse::<()>::error(
-                "INVALID_REQUEST".to_string(),
-                format!("Invalid JSON: {}", e),
+                "INVALID_REQUEST",
+                "Invalid JSON",
             ));
         }
     };
 
     Response::from_json(&ApiResponse::<()>::error(
-        "NOT_IMPLEMENTED".to_string(),
-        "Configuration update not yet implemented".to_string(),
+        "NOT_IMPLEMENTED",
+        "Configuration update not yet implemented",
     ))
 }
 
@@ -576,7 +579,7 @@ fn require_permission(claims: &Claims, permission: &str) -> std::result::Result<
     if auth_service.require_permission(claims, permission) {
         Ok(())
     } else {
-        Err(format!("Permission '{}' required", permission))
+        Err("Permission required".to_string())
     }
 }
 
@@ -608,7 +611,7 @@ pub async fn ai_generate_task_handler(mut req: Request, ctx: RouteContext<()>) -
     // Generate task details
     match ai_provider.generate_task_details(&request).await {
         Ok(response) => Response::from_json(&ApiResponse::success(response)),
-        Err(e) => Response::from_json(&ApiResponse::error("ai_error", &format!("AI generation failed: {}", e))),
+        Err(e) => Response::from_json(&ApiResponse::error("ai_error", "AI generation failed")),
     }
 }
 
@@ -639,7 +642,7 @@ pub async fn ai_acceptance_criteria_handler(mut req: Request, ctx: RouteContext<
     // Generate acceptance criteria
     match ai_provider.generate_acceptance_criteria(&request).await {
         Ok(response) => Response::from_json(&ApiResponse::success(response)),
-        Err(e) => Response::from_json(&ApiResponse::error("ai_error", &format!("AI generation failed: {}", e))),
+        Err(e) => Response::from_json(&ApiResponse::error("ai_error", "AI generation failed")),
     }
 }
 
@@ -670,7 +673,7 @@ pub async fn ai_estimate_story_points_handler(mut req: Request, ctx: RouteContex
     // Estimate story points
     match ai_provider.estimate_story_points(&request).await {
         Ok(response) => Response::from_json(&ApiResponse::success(response)),
-        Err(e) => Response::from_json(&ApiResponse::error("ai_error", &format!("AI estimation failed: {}", e))),
+        Err(e) => Response::from_json(&ApiResponse::error("ai_error", "AI estimation failed")),
     }
 }
 
@@ -693,11 +696,10 @@ pub async fn ai_analyze_dependencies_handler(mut req: Request, ctx: RouteContext
         Err(_) => return Response::from_json(&ApiResponse::error("invalid_request", "Invalid request body")),
     };
 
-    use crate::ai::AIDependencyAnalysisResponse;
     let response = AIDependencyAnalysisResponse {
         dependencies: vec![],
         blocks: vec![],
-        reasoning: "Dependency analysis coming soon with AI integration".to_string(),
+        reasoning: "Dependency analysis coming soon with AI integration",
     };
 
     Response::from_json(&ApiResponse::success(response))
@@ -722,10 +724,9 @@ pub async fn ai_plan_sprint_handler(mut req: Request, ctx: RouteContext<()>) -> 
         Err(_) => return Response::from_json(&ApiResponse::error("invalid_request", "Invalid request body")),
     };
 
-    use crate::ai::AISprintPlanningResponse;
     let response = AISprintPlanningResponse {
         recommended_tasks: vec![],
-        reasoning: "Sprint planning coming soon with AI integration".to_string(),
+        reasoning: "Sprint planning coming soon with AI integration",
         total_story_points: 0,
         warnings: None,
     };

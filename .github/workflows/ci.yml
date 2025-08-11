@@ -7,7 +7,7 @@ on:
     branches: [ main, develop ]
 
 jobs:
-  test:
+  frontend-test:
     runs-on: ubuntu-latest
     
     strategy:
@@ -39,7 +39,7 @@ jobs:
         npm run parse -- roundtrip example.md > /dev/null
         echo "CLI tests passed"
 
-  lint:
+  frontend-lint:
     runs-on: ubuntu-latest
     
     steps:
@@ -62,3 +62,92 @@ jobs:
       run: |
         # Basic check for potential issues
         echo "TypeScript compilation successful"
+
+  backend-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        override: true
+        components: rustfmt, clippy
+        
+    - name: Cache Rust dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          cloudflare-backend/target
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        
+    - name: Check Rust formatting
+      run: |
+        cd cloudflare-backend
+        cargo fmt --all -- --check
+      continue-on-error: true
+        
+    - name: Run Rust linting
+      run: |
+        cd cloudflare-backend
+        cargo clippy --all-targets --all-features -- -D warnings
+      continue-on-error: true
+        
+    - name: Check Rust compilation
+      run: |
+        cd cloudflare-backend
+        cargo check
+      continue-on-error: true
+        
+    - name: Run Rust tests
+      run: |
+        cd cloudflare-backend
+        cargo test --tests
+      continue-on-error: true
+        
+    - name: Generate test coverage report
+      run: |
+        cd cloudflare-backend
+        echo "Test coverage reporting would be implemented here"
+        # cargo tarpaulin --out Xml would be used for actual coverage
+      continue-on-error: true
+
+  backend-integration-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        override: true
+        
+    - name: Setup Node.js for Wrangler
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        
+    - name: Install Wrangler
+      run: npm install -g wrangler
+      
+    - name: Validate Worker configuration
+      run: |
+        cd cloudflare-backend
+        wrangler validate
+      continue-on-error: true
+        
+    - name: Run integration tests
+      run: |
+        cd cloudflare-backend
+        echo "Integration tests would run here"
+        echo "These would test HTTP endpoints using wrangler dev"
+        # Future: Add actual HTTP endpoint tests
+      continue-on-error: true

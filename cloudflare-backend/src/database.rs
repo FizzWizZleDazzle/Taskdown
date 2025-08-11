@@ -94,6 +94,7 @@ impl Database {
             workspace_name: "Default Workspace".to_string(),
             timezone: "UTC".to_string(),
             date_format: "MM/DD/YYYY".to_string(),
+            theme: "default".to_string(),
             features: WorkspaceFeatures {
                 realtime: false,
                 analytics: true,

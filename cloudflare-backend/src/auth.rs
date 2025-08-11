@@ -39,6 +39,17 @@ impl AuthService {
         Self { config }
     }
 
+    pub async fn from_request(req: &Request, _env: &Env) -> std::result::Result<Claims, String> {
+        let auth_config = crate::config::get_auth_config();
+        let auth_service = AuthService::new(auth_config);
+
+        if let Some(token) = auth_service.extract_auth_header(req) {
+            auth_service.verify_session_token(&token)
+        } else {
+            Err("No authorization header found".to_string())
+        }
+    }
+
     pub fn verify_api_key(&self, api_key: &str) -> bool {
         if !self.config.require_api_key {
             return true;
@@ -116,13 +127,7 @@ impl AuthService {
             .get("authorization")
             .ok()
             .flatten()
-            .and_then(|auth| {
-                if auth.starts_with("Bearer ") {
-                    Some(auth[7..].to_string())
-                } else {
-                    None
-                }
-            })
+            .and_then(|auth| auth.strip_prefix("Bearer ").map(|token| token.to_string()))
     }
 
     pub fn require_permission(&self, claims: &Claims, required_permission: &str) -> bool {

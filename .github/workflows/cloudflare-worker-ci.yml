@@ -47,12 +47,10 @@ jobs:
       run: cargo fmt --check
       
     - name: Run Clippy linting
-      run: cargo clippy --all-targets --all-features -- -D warnings
-      continue-on-error: true
+      run: cargo clippy --all-targets --all-features -- -D warnings -A dead-code -A clippy::uninlined-format-args
       
     - name: Check compilation
       run: cargo check --all-targets --all-features
-      continue-on-error: true
       
     - name: Install cargo-audit
       run: cargo install cargo-audit --locked
@@ -107,15 +105,7 @@ jobs:
     - name: Run project validation script
       run: |
         chmod +x validate.sh
-        # Skip cargo check in validation script since we do it separately
-        sed -i 's/cargo check --quiet/echo "✅ Skipping cargo check - handled separately"/' validate.sh
-        # Run validation and allow it to fail gracefully on compilation issues
-        if ./validate.sh; then
-          echo "✅ All validations passed"
-        else
-          echo "⚠️  Some validations failed (expected due to compilation issues)"
-          echo "Structure and configuration checks should still pass"
-        fi
+        ./validate.sh
 
   integration-test:
     name: Integration Tests
@@ -154,11 +144,9 @@ jobs:
           
     - name: Install worker-build
       run: cargo install worker-build --locked
-      continue-on-error: true
       
     - name: Build worker
       run: npm run build
-      continue-on-error: true
       
     - name: Validate build output
       run: |

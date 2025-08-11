@@ -275,6 +275,7 @@ pub struct WorkspaceConfig {
     pub timezone: String,
     #[serde(rename = "dateFormat")]
     pub date_format: String,
+    pub theme: String,
     pub features: WorkspaceFeatures,
     pub limits: WorkspaceLimits,
     pub ai: Option<AIConfig>,

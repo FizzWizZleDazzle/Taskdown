@@ -7,7 +7,7 @@ on:
     branches: [ main, develop ]
 
 jobs:
-  test:
+  test-frontend:
     runs-on: ubuntu-latest
     
     strategy:
@@ -38,6 +38,58 @@ jobs:
         npm run parse -- parse example.md > /dev/null
         npm run parse -- roundtrip example.md > /dev/null
         echo "CLI tests passed"
+
+  test-backend:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        override: true
+        components: rustfmt, clippy
+        
+    - name: Cache cargo registry
+      uses: actions/cache@v4
+      with:
+        path: ~/.cargo/registry
+        key: ${{ runner.os }}-cargo-registry-${{ hashFiles('backend/Cargo.lock') }}
+        
+    - name: Cache cargo index
+      uses: actions/cache@v4
+      with:
+        path: ~/.cargo/git
+        key: ${{ runner.os }}-cargo-index-${{ hashFiles('backend/Cargo.lock') }}
+        
+    - name: Cache cargo build
+      uses: actions/cache@v4
+      with:
+        path: backend/target
+        key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('backend/Cargo.lock') }}
+
+    - name: Run backend tests
+      run: |
+        cd backend
+        cargo test
+        
+    - name: Run backend linter
+      run: |
+        cd backend
+        cargo clippy -- -D warnings
+        
+    - name: Check backend formatting
+      run: |
+        cd backend
+        cargo fmt --check
+        
+    - name: Build backend
+      run: |
+        cd backend
+        cargo build --release
 
   lint:
     runs-on: ubuntu-latest

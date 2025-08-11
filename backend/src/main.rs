@@ -8,10 +8,10 @@ use tower::ServiceBuilder;
 use tower_http::cors::{Any, CorsLayer};
 use tracing_subscriber;
 
-mod models;
-mod handlers;
-mod database;
-mod auth;
+pub mod models;
+pub mod handlers;
+pub mod database;
+pub mod auth;
 
 use handlers::*;
 

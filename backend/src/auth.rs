@@ -193,3 +193,184 @@ pub fn verify_password(password: &str, hash: &str) -> Result<bool> {
     bcrypt::verify(password, hash)
         .map_err(|e| anyhow::anyhow!("Failed to verify password: {}", e))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::collections::HashMap;
+
+    #[test]
+    fn test_claims_creation() {
+        let claims = Claims::new(
+            "test-user".to_string(),
+            "testuser".to_string(),
+            vec!["read".to_string(), "write".to_string()],
+            24
+        );
+
+        assert_eq!(claims.sub, "test-user");
+        assert_eq!(claims.username, "testuser");
+        assert_eq!(claims.permissions, vec!["read", "write"]);
+        assert!(claims.exp > claims.iat);
+    }
+
+    #[test]
+    fn test_jwt_token_creation_and_verification() {
+        let auth_service = AuthService::new();
+        let claims = Claims::new(
+            "test-user".to_string(),
+            "testuser".to_string(),
+            vec!["read".to_string()],
+            1
+        );
+
+        // Test token creation
+        let token = auth_service.create_token(&claims).unwrap();
+        assert!(!token.is_empty());
+
+        // Test token verification
+        let verified_claims = auth_service.verify_token(&token).unwrap();
+        assert_eq!(verified_claims.sub, claims.sub);
+        assert_eq!(verified_claims.username, claims.username);
+        assert_eq!(verified_claims.permissions, claims.permissions);
+    }
+
+    #[test]
+    fn test_jwt_token_verification_invalid_token() {
+        let auth_service = AuthService::new();
+        let result = auth_service.verify_token("invalid-token");
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_api_key_authentication_valid() {
+        let auth_service = AuthService::new();
+        let auth_config = AuthConfig {
+            r#type: "api-key".to_string(),
+            token: Some("taskdown-api-key-12345".to_string()),
+            username: None,
+            password: None,
+            custom_headers: None,
+        };
+
+        let result = auth_service.authenticate_request(&auth_config).await.unwrap();
+        assert!(result.authenticated);
+        assert!(result.session_token.is_some());
+        assert!(result.expires_at.is_some());
+        assert_eq!(result.permissions, vec!["read", "write"]);
+    }
+
+    #[tokio::test]
+    async fn test_api_key_authentication_invalid() {
+        let auth_service = AuthService::new();
+        let auth_config = AuthConfig {
+            r#type: "api-key".to_string(),
+            token: Some("invalid-key".to_string()),
+            username: None,
+            password: None,
+            custom_headers: None,
+        };
+
+        let result = auth_service.authenticate_request(&auth_config).await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_basic_authentication_valid() {
+        let auth_service = AuthService::new();
+        let auth_config = AuthConfig {
+            r#type: "basic".to_string(),
+            token: None,
+            username: Some("admin".to_string()),
+            password: Some("admin".to_string()),
+            custom_headers: None,
+        };
+
+        let result = auth_service.authenticate_request(&auth_config).await.unwrap();
+        assert!(result.authenticated);
+        assert!(result.session_token.is_some());
+        assert_eq!(result.permissions, vec!["read", "write", "admin"]);
+    }
+
+    #[tokio::test]
+    async fn test_basic_authentication_invalid() {
+        let auth_service = AuthService::new();
+        let auth_config = AuthConfig {
+            r#type: "basic".to_string(),
+            token: None,
+            username: Some("wrong".to_string()),
+            password: Some("wrong".to_string()),
+            custom_headers: None,
+        };
+
+        let result = auth_service.authenticate_request(&auth_config).await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_custom_authentication_valid() {
+        let auth_service = AuthService::new();
+        let mut headers = HashMap::new();
+        headers.insert("X-Auth-Token".to_string(), "custom-token-abc123".to_string());
+        
+        let auth_config = AuthConfig {
+            r#type: "custom".to_string(),
+            token: None,
+            username: None,
+            password: None,
+            custom_headers: Some(headers),
+        };
+
+        let result = auth_service.authenticate_request(&auth_config).await.unwrap();
+        assert!(result.authenticated);
+        assert!(result.session_token.is_some());
+        assert_eq!(result.permissions, vec!["read", "write"]);
+    }
+
+    #[test]
+    fn test_extract_auth_claims_valid_bearer() {
+        let auth_service = AuthService::new();
+        let claims = Claims::new(
+            "test-user".to_string(),
+            "testuser".to_string(),
+            vec!["read".to_string()],
+            1
+        );
+        let token = auth_service.create_token(&claims).unwrap();
+        let auth_header = format!("Bearer {}", token);
+
+        let result = extract_auth_claims(Some(&auth_header)).unwrap();
+        assert!(result.is_some());
+        let extracted_claims = result.unwrap();
+        assert_eq!(extracted_claims.sub, "test-user");
+        assert_eq!(extracted_claims.username, "testuser");
+    }
+
+    #[test]
+    fn test_extract_auth_claims_invalid_bearer() {
+        let result = extract_auth_claims(Some("Bearer invalid-token")).unwrap();
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_extract_auth_claims_no_bearer_prefix() {
+        let result = extract_auth_claims(Some("invalid-format")).unwrap();
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_extract_auth_claims_no_header() {
+        let result = extract_auth_claims(None).unwrap();
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_password_hashing_and_verification() {
+        let password = "test-password";
+        let hash = hash_password(password).unwrap();
+        
+        assert_ne!(hash, password); // Hash should be different from password
+        assert!(verify_password(password, &hash).unwrap()); // Should verify correctly
+        assert!(!verify_password("wrong-password", &hash).unwrap()); // Should fail with wrong password
+    }
+}

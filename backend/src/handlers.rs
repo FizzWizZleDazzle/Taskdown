@@ -1,14 +1,14 @@
 use axum::{
     extract::{Path, Query, State},
-    http::{StatusCode, HeaderMap},
+    http::{HeaderMap, StatusCode},
     response::Json,
 };
 use chrono::Utc;
 use std::collections::HashMap;
 
+use crate::auth::{extract_auth_claims, AuthService};
 use crate::database::{self, DbPool};
 use crate::models::*;
-use crate::auth::{AuthService, extract_auth_claims};
 
 // Health check handler
 pub async fn health_handler() -> Json<ApiResponse<HealthStatus>> {
@@ -23,7 +23,7 @@ pub async fn health_handler() -> Json<ApiResponse<HealthStatus>> {
             response_time: 1,
         },
         memory: MemoryStatus {
-            used: 50 * 1024 * 1024, // 50MB
+            used: 50 * 1024 * 1024,   // 50MB
             total: 500 * 1024 * 1024, // 500MB
             percentage: 10.0,
         },
@@ -37,8 +37,11 @@ pub async fn auth_verify_handler(
     Json(request): Json<AuthRequest>,
 ) -> Json<ApiResponse<AuthResponse>> {
     let auth_service = AuthService::new();
-    
-    match auth_service.authenticate_request(&request.credentials).await {
+
+    match auth_service
+        .authenticate_request(&request.credentials)
+        .await
+    {
         Ok(auth_result) => {
             let auth_response = AuthResponse {
                 authenticated: auth_result.authenticated,
@@ -60,18 +63,15 @@ pub async fn auth_verify_handler(
     }
 }
 
-pub async fn auth_status_handler(
-    headers: HeaderMap,
-) -> Json<ApiResponse<AuthResponse>> {
-    let authorization = headers.get("authorization")
-        .and_then(|h| h.to_str().ok());
-    
+pub async fn auth_status_handler(headers: HeaderMap) -> Json<ApiResponse<AuthResponse>> {
+    let authorization = headers.get("authorization").and_then(|h| h.to_str().ok());
+
     match extract_auth_claims(authorization) {
         Ok(Some(claims)) => {
             let auth_response = AuthResponse {
                 authenticated: true,
                 session_token: None, // Don't return the token in status check
-                expires_at: Some(chrono::DateTime::from_timestamp(claims.exp, 0).unwrap().into()),
+                expires_at: Some(chrono::DateTime::from_timestamp(claims.exp, 0).unwrap()),
                 permissions: claims.permissions,
             };
             Json(ApiResponse::success(auth_response))
@@ -85,9 +85,10 @@ pub async fn auth_status_handler(
             };
             Json(ApiResponse::success(auth_response))
         }
-        Err(e) => {
-            Json(ApiResponse::error("TOKEN_INVALID".to_string(), e.to_string()))
-        }
+        Err(e) => Json(ApiResponse::error(
+            "TOKEN_INVALID".to_string(),
+            e.to_string(),
+        )),
     }
 }
 
@@ -98,7 +99,11 @@ pub async fn workspace_info_handler() -> Json<ApiResponse<WorkspaceInfo>> {
         name: "Taskdown Workspace".to_string(),
         description: Some("Default Taskdown workspace".to_string()),
         server_version: "0.1.0".to_string(),
-        capabilities: vec!["sync".to_string(), "auth".to_string(), "analytics".to_string()],
+        capabilities: vec![
+            "sync".to_string(),
+            "auth".to_string(),
+            "analytics".to_string(),
+        ],
         last_updated: Utc::now(),
         owner: WorkspaceOwner {
             id: "admin".to_string(),
@@ -284,28 +289,28 @@ pub async fn export_markdown_handler(
         Ok(tasks) => {
             let mut markdown = String::new();
             markdown.push_str("# Taskdown Export\n\n");
-            
+
             // Group tasks by epic
             let mut epics: HashMap<String, Vec<&Task>> = HashMap::new();
             let mut orphaned_tasks = Vec::new();
-            
+
             for task in &tasks {
                 if let Some(epic) = &task.epic {
-                    epics.entry(epic.clone()).or_insert_with(Vec::new).push(task);
+                    epics.entry(epic.clone()).or_default().push(task);
                 } else {
                     orphaned_tasks.push(task);
                 }
             }
-            
+
             // Export epics
             for (epic_name, epic_tasks) in epics {
-                markdown.push_str(&format!("## Epic: {}\n\n", epic_name));
-                
+                markdown.push_str(&format!("## Epic: {epic_name}\n\n"));
+
                 for task in epic_tasks {
                     export_task_to_markdown(task, &mut markdown);
                 }
             }
-            
+
             // Export orphaned tasks
             if !orphaned_tasks.is_empty() {
                 markdown.push_str("## Miscellaneous Tasks\n\n");
@@ -313,12 +318,12 @@ pub async fn export_markdown_handler(
                     export_task_to_markdown(task, &mut markdown);
                 }
             }
-            
+
             let result = ExportResult {
                 markdown,
                 filename: format!("taskdown-export-{}.md", Utc::now().format("%Y-%m-%d")),
             };
-            
+
             Ok(Json(ApiResponse::success(result)))
         }
         Err(e) => {
@@ -330,27 +335,27 @@ pub async fn export_markdown_handler(
 
 fn export_task_to_markdown(task: &Task, markdown: &mut String) {
     markdown.push_str(&format!("### {}: {}\n\n", task.id, task.title));
-    
+
     markdown.push_str(&format!("**Type**: {:?}\n", task.r#type));
     markdown.push_str(&format!("**Priority**: {:?}\n", task.priority));
     markdown.push_str(&format!("**Status**: {:?}\n", task.status));
-    
+
     if let Some(points) = task.story_points {
-        markdown.push_str(&format!("**Story Points**: {}\n", points));
+        markdown.push_str(&format!("**Story Points**: {points}\n"));
     }
-    
+
     if let Some(sprint) = &task.sprint {
-        markdown.push_str(&format!("**Sprint**: {}\n", sprint));
+        markdown.push_str(&format!("**Sprint**: {sprint}\n"));
     }
-    
+
     if let Some(assignee) = &task.assignee {
-        markdown.push_str(&format!("**Assignee**: {}\n", assignee));
+        markdown.push_str(&format!("**Assignee**: {assignee}\n"));
     }
-    
+
     if !task.description.is_empty() {
         markdown.push_str(&format!("**Description**: {}\n", task.description));
     }
-    
+
     // Export acceptance criteria
     if !task.acceptance_criteria.is_empty() {
         markdown.push_str("\n**Acceptance Criteria**:\n");
@@ -359,7 +364,7 @@ fn export_task_to_markdown(task: &Task, markdown: &mut String) {
             markdown.push_str(&format!("- [{}] {}\n", checkbox, item.text));
         }
     }
-    
+
     // Export technical tasks
     if !task.technical_tasks.is_empty() {
         markdown.push_str("\n**Technical Tasks**:\n");
@@ -368,20 +373,23 @@ fn export_task_to_markdown(task: &Task, markdown: &mut String) {
             markdown.push_str(&format!("- [{}] {}\n", checkbox, item.text));
         }
     }
-    
+
     // Export dependencies and blocks
     if !task.dependencies.is_empty() {
-        markdown.push_str(&format!("**Dependencies**: {}\n", task.dependencies.join(", ")));
+        markdown.push_str(&format!(
+            "**Dependencies**: {}\n",
+            task.dependencies.join(", ")
+        ));
     } else {
         markdown.push_str("**Dependencies**: None\n");
     }
-    
+
     if !task.blocks.is_empty() {
         markdown.push_str(&format!("**Blocks**: {}\n", task.blocks.join(", ")));
     } else {
         markdown.push_str("**Blocks**: None\n");
     }
-    
+
     markdown.push_str("\n---\n\n");
 }
 
@@ -389,25 +397,32 @@ fn export_task_to_markdown(task: &Task, markdown: &mut String) {
 pub async fn analytics_summary_handler(
     State(pool): State<DbPool>,
 ) -> Result<Json<ApiResponse<AnalyticsSummary>>, StatusCode> {
-    let total_tasks = database::get_task_count(&pool).await
+    let total_tasks = database::get_task_count(&pool)
+        .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-    
-    let tasks_by_status = database::get_tasks_by_status(&pool).await
+
+    let tasks_by_status = database::get_tasks_by_status(&pool)
+        .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-    
-    let tasks_by_type = database::get_tasks_by_type(&pool).await
+
+    let tasks_by_type = database::get_tasks_by_type(&pool)
+        .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-    
-    let tasks_by_priority = database::get_tasks_by_priority(&pool).await
+
+    let tasks_by_priority = database::get_tasks_by_priority(&pool)
+        .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-    
-    let average_story_points = database::get_average_story_points(&pool).await
+
+    let average_story_points = database::get_average_story_points(&pool)
+        .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-    
-    let completion_rate = database::get_completion_rate(&pool).await
+
+    let completion_rate = database::get_completion_rate(&pool)
+        .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-    
-    let active_sprints = database::get_active_sprints(&pool).await
+
+    let active_sprints = database::get_active_sprints(&pool)
+        .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     let summary = AnalyticsSummary {
@@ -428,7 +443,7 @@ pub async fn analytics_burndown_handler(
     Query(params): Query<HashMap<String, String>>,
 ) -> Json<ApiResponse<BurndownData>> {
     let sprint = params.get("sprint").cloned().unwrap_or_default();
-    
+
     let burndown = BurndownData {
         sprint: sprint.clone(),
         start_date: "2024-01-01".to_string(),
@@ -478,9 +493,7 @@ pub async fn users_update_handler(
     Json(ApiResponse::success(response))
 }
 
-pub async fn users_delete_handler(
-    Path(id): Path<String>,
-) -> Json<ApiResponse<serde_json::Value>> {
+pub async fn users_delete_handler(Path(id): Path<String>) -> Json<ApiResponse<serde_json::Value>> {
     let response = serde_json::json!({
         "deleted": true
     });
@@ -493,7 +506,7 @@ pub async fn activity_handler(
     Query(params): Query<HashMap<String, String>>,
 ) -> Json<ApiResponse<ActivityResponse>> {
     let activities = vec![];
-    
+
     let response = ActivityResponse {
         activities,
         total_count: 0,

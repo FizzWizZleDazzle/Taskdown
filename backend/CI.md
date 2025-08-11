@@ -23,12 +23,12 @@ The workflow is optimized to only run when relevant files change:
 Performs static analysis and code quality checks:
 
 - **Rust Compilation Check**: Verifies the code compiles without errors using `cargo check`
-- **Code Formatting**: Ensures consistent code formatting with `cargo fmt --check`
+- **Code Formatting**: Enforces consistent code formatting with `cargo fmt --check` (fails build on formatting issues)
 - **Linting**: Runs Clippy static analysis with `cargo clippy` to catch common mistakes and improve code quality
 
-**Allowed Warnings**: The workflow currently allows certain warnings to accommodate the developing codebase:
+**Allowed Warnings**: The workflow allows certain warnings to accommodate the developing codebase:
 - `dead_code` - Unused code (common in development)
-- `unused_variables` - Unused variables (temporary during development)
+- `unused_variables` - Unused variables (temporary during development) 
 - `unused_imports` - Unused imports (temporary during development)
 
 ### 2. Test (`test`)
@@ -46,6 +46,7 @@ Performs security vulnerability scanning:
 
 - **Dependency Audit**: Uses `cargo audit` to check for known security vulnerabilities in dependencies
 - **Advisory Database**: Automatically updates and checks against the RustSec Advisory Database
+- **Ignored Advisories**: RUSTSEC-2023-0071 (RSA vulnerability in sqlx-mysql) is ignored as we only use SQLite functionality
 
 ### 4. Build (`build`)
 
@@ -98,13 +99,13 @@ cargo check --all-targets --all-features
 cargo fmt --all -- --check
 
 # Run linting (with same settings as CI)
-cargo clippy --all-targets --all-features -- -D warnings -A dead_code -A unused_variables -A unused_imports
+cargo clippy --all-targets --all-features -- -A dead_code -A unused_variables -A unused_imports
 
 # Run tests
 cargo test --all-features --bins
 
-# Run security audit (requires cargo-audit installation)
-cargo audit
+# Run security audit (with ignored advisories)
+cargo audit --ignore RUSTSEC-2023-0071
 
 # Build release
 cargo build --release --all-features

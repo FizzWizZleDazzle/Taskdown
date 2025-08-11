@@ -52,15 +52,14 @@ jobs:
       run: |
         if ! cargo fmt --all -- --check; then
           echo "❌ Code formatting issues found. Please run 'cargo fmt' to fix formatting."
-          echo "📝 Note: This is a warning for now, but formatting should be fixed."
-          exit 0
+          exit 1
         else
           echo "✅ Code formatting looks good!"
         fi
       
     - name: Run Clippy (linting)
       working-directory: ./backend
-      run: cargo clippy --all-targets --all-features -- -A dead_code -A unused_variables -A unused_imports -A clippy::single_component_path_imports -A clippy::useless_conversion -A clippy::unwrap_or_default -A clippy::uninlined_format_args -A clippy::manual_strip
+      run: cargo clippy --all-targets --all-features -- -A dead_code -A unused_variables -A unused_imports
       
   test:
     name: Test
@@ -126,7 +125,9 @@ jobs:
       working-directory: ./backend
       run: |
         if command -v cargo-audit >/dev/null 2>&1; then
-          cargo audit
+          # Ignore RUSTSEC-2023-0071 (RSA vulnerability in sqlx-mysql)
+          # We only use SQLite and don't utilize MySQL functionality
+          cargo audit --ignore RUSTSEC-2023-0071
         else
           echo "⚠️  cargo-audit not available, skipping security audit"
           echo "💡 Install locally with: cargo install cargo-audit"

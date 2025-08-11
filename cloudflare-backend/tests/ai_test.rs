@@ -1,4 +1,4 @@
-use serde_json;
+//use serde_json;
 
 // Simplified AI request/response structs for testing
 
@@ -127,9 +127,9 @@ fn test_simple_ai_task_generation_request_deserialization() {
         "epic": "Test Epic"
     }
     "#;
-    
+
     let request: SimpleAITaskGenerationRequest = serde_json::from_str(json).unwrap();
-    
+
     assert_eq!(request.title, "Test Task");
     assert_eq!(request.task_type, Some("Story".to_string()));
     assert_eq!(request.context, Some("Some context".to_string()));
@@ -143,9 +143,9 @@ fn test_simple_ai_task_generation_request_minimal() {
         "title": "Minimal Task"
     }
     "#;
-    
+
     let request: SimpleAITaskGenerationRequest = serde_json::from_str(json).unwrap();
-    
+
     assert_eq!(request.title, "Minimal Task");
     assert!(request.task_type.is_none());
     assert!(request.context.is_none());
@@ -157,22 +157,16 @@ fn test_simple_ai_task_generation_response_serialization() {
     let response = SimpleAITaskGenerationResponse {
         suggested_title: Some("Improved Title".to_string()),
         description: "A detailed description".to_string(),
-        acceptance_criteria: vec![
-            "Criterion 1".to_string(),
-            "Criterion 2".to_string(),
-        ],
-        technical_tasks: vec![
-            "Task 1".to_string(),
-            "Task 2".to_string(),
-        ],
+        acceptance_criteria: vec!["Criterion 1".to_string(), "Criterion 2".to_string()],
+        technical_tasks: vec!["Task 1".to_string(), "Task 2".to_string()],
         estimated_story_points: Some(5),
         suggested_type: Some("Story".to_string()),
         suggested_priority: Some("High".to_string()),
         dependencies: Some(vec!["TASK-123".to_string()]),
     };
-    
+
     let json = serde_json::to_string(&response).unwrap();
-    
+
     assert!(json.contains("\"suggestedTitle\""));
     assert!(json.contains("\"Improved Title\""));
     assert!(json.contains("\"acceptanceCriteria\""));
@@ -190,13 +184,16 @@ fn test_simple_ai_acceptance_criteria_request_deserialization() {
         "existingCriteria": ["Existing criterion"]
     }
     "#;
-    
+
     let request: SimpleAIAcceptanceCriteriaRequest = serde_json::from_str(json).unwrap();
-    
+
     assert_eq!(request.title, "Test Task");
     assert_eq!(request.description, "Task description");
     assert_eq!(request.task_type, "Story");
-    assert_eq!(request.existing_criteria, Some(vec!["Existing criterion".to_string()]));
+    assert_eq!(
+        request.existing_criteria,
+        Some(vec!["Existing criterion".to_string()])
+    );
 }
 
 #[test]
@@ -210,9 +207,9 @@ fn test_simple_ai_story_point_estimation_request_deserialization() {
         "type": "Story"
     }
     "#;
-    
+
     let request: SimpleAIStoryPointEstimationRequest = serde_json::from_str(json).unwrap();
-    
+
     assert_eq!(request.title, "Test Task");
     assert_eq!(request.description, "Task description");
     assert_eq!(request.acceptance_criteria, vec!["AC1", "AC2"]);
@@ -242,9 +239,9 @@ fn test_simple_ai_dependency_analysis_request_deserialization() {
         ]
     }
     "#;
-    
+
     let request: SimpleAIDependencyAnalysisRequest = serde_json::from_str(json).unwrap();
-    
+
     assert_eq!(request.task.id, "TASK-123");
     assert_eq!(request.task.title, "Test Task");
     assert_eq!(request.existing_tasks.len(), 1);
@@ -258,9 +255,9 @@ fn test_simple_ai_dependency_analysis_response_serialization() {
         blocks: vec!["TASK-789".to_string()],
         reasoning: "Analysis reasoning".to_string(),
     };
-    
+
     let json = serde_json::to_string(&response).unwrap();
-    
+
     assert!(json.contains("\"dependencies\""));
     assert!(json.contains("\"TASK-456\""));
     assert!(json.contains("\"blocks\""));
@@ -284,14 +281,17 @@ fn test_simple_ai_sprint_planning_request_deserialization() {
         "sprintGoal": "Complete user authentication"
     }
     "#;
-    
+
     let request: SimpleAISprintPlanningRequest = serde_json::from_str(json).unwrap();
-    
+
     assert_eq!(request.tasks.len(), 1);
     assert_eq!(request.tasks[0].id, "TASK-123");
     assert_eq!(request.tasks[0].story_points, Some(5));
     assert_eq!(request.sprint_capacity, 40);
-    assert_eq!(request.sprint_goal, Some("Complete user authentication".to_string()));
+    assert_eq!(
+        request.sprint_goal,
+        Some("Complete user authentication".to_string())
+    );
 }
 
 #[test]
@@ -302,9 +302,9 @@ fn test_simple_ai_sprint_planning_response_serialization() {
         total_story_points: 25,
         warnings: Some(vec!["Capacity might be exceeded".to_string()]),
     };
-    
+
     let json = serde_json::to_string(&response).unwrap();
-    
+
     assert!(json.contains("\"recommendedTasks\""));
     assert!(json.contains("\"totalStoryPoints\":25"));
     assert!(json.contains("\"warnings\""));
@@ -323,13 +323,16 @@ fn test_simple_ai_config_deserialization() {
         "temperature": 0.7
     }
     "#;
-    
+
     let config: SimpleAIConfig = serde_json::from_str(json).unwrap();
-    
+
     assert!(config.enabled);
     assert_eq!(config.provider, "openai");
     assert_eq!(config.api_key, "sk-test-key");
-    assert_eq!(config.endpoint, Some("https://api.openai.com/v1/chat/completions".to_string()));
+    assert_eq!(
+        config.endpoint,
+        Some("https://api.openai.com/v1/chat/completions".to_string())
+    );
     assert_eq!(config.model, Some("gpt-4".to_string()));
     assert_eq!(config.max_tokens, Some(1000));
     assert_eq!(config.temperature, Some(0.7));

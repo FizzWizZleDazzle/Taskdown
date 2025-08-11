@@ -808,6 +808,7 @@ dependencies = [
  "chrono",
  "console_error_panic_hook",
  "js-sys",
+ "log",
  "mockall",
  "serde",
  "serde_json",

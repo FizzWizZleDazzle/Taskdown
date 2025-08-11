@@ -30,9 +30,9 @@ impl<T> ApiResponse<T> {
         Self {
             success: false,
             data: None,
-            error: Some(ApiError { 
-                code: code.to_string(), 
-                message: message.to_string() 
+            error: Some(ApiError {
+                code: code.to_string(),
+                message: message.to_string(),
             }),
         }
     }

@@ -247,6 +247,53 @@ wrangler tail
 wrangler analytics
 ```
 
+## Continuous Integration
+
+This backend includes comprehensive CI workflow checks that run automatically on pull requests and commits. The CI pipeline ensures code quality, security, and deployment readiness.
+
+### CI Workflow Features
+
+The GitHub Actions workflow (`.github/workflows/cloudflare-worker-ci.yml`) includes:
+
+- **Code Quality Checks**:
+  - Rust formatting verification (`cargo fmt`)
+  - Linting with Clippy (`cargo clippy`)
+  - Compilation validation (`cargo check`)
+
+- **Security Auditing**:
+  - Dependency vulnerability scanning (`cargo audit`)
+  - Security best practices validation
+
+- **Configuration Validation**:
+  - Wrangler.toml structure verification
+  - Project structure and API endpoint validation
+  - Build process verification
+
+### Running CI Checks Locally
+
+```bash
+# Format code
+cargo fmt
+
+# Check formatting
+cargo fmt --check
+
+# Run linting
+cargo clippy --all-targets --all-features
+
+# Check compilation
+cargo check
+
+# Security audit
+cargo install cargo-audit
+cargo audit
+
+# Full project validation
+./validate.sh
+```
+
+For detailed CI workflow documentation, see [CI_WORKFLOW.md](./CI_WORKFLOW.md).
+
 ## Deployment
 
 ### Production Deployment

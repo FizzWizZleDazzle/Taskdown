@@ -30,9 +30,9 @@ impl<T> ApiResponse<T> {
         Self {
             success: false,
             data: None,
-            error: Some(ApiError { 
-                code: code.to_string(), 
-                message: message.to_string() 
+            error: Some(ApiError {
+                code: code.to_string(),
+                message: message.to_string(),
             }),
         }
     }
@@ -275,6 +275,7 @@ pub struct WorkspaceConfig {
     pub timezone: String,
     #[serde(rename = "dateFormat")]
     pub date_format: String,
+    pub theme: String,
     pub features: WorkspaceFeatures,
     pub limits: WorkspaceLimits,
     pub ai: Option<AIConfig>,

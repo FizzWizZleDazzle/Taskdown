@@ -21,20 +21,15 @@ pub fn load_cors_origins() -> CorsOrigins {
     // In a real implementation, this would load from a file
     // For Cloudflare Workers, we embed the configuration
     let origins_json = include_str!("../config/cors-origins.json");
-    
-    serde_json::from_str(origins_json)
-        .unwrap_or_else(|_| CorsOrigins {
-            development: vec![
-                "http://localhost:3000".to_string(),
-                "http://localhost:8080".to_string(),
-            ],
-            staging: vec![
-                "https://taskdown-staging.example.com".to_string(),
-            ],
-            production: vec![
-                "https://taskdown.example.com".to_string(),
-            ],
-        })
+
+    serde_json::from_str(origins_json).unwrap_or_else(|_| CorsOrigins {
+        development: vec![
+            "http://localhost:3000".to_string(),
+            "http://localhost:8080".to_string(),
+        ],
+        staging: vec!["https://taskdown-staging.example.com".to_string()],
+        production: vec!["https://taskdown.example.com".to_string()],
+    })
 }
 
 #[derive(Debug, Serialize, Deserialize)]

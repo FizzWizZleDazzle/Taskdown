@@ -1,7 +1,7 @@
-use worker::*;
 use crate::models::*;
 use chrono::Utc;
 use uuid::Uuid;
+use worker::*;
 
 pub struct Database;
 
@@ -94,6 +94,7 @@ impl Database {
             workspace_name: "Default Workspace".to_string(),
             timezone: "UTC".to_string(),
             date_format: "MM/DD/YYYY".to_string(),
+            theme: "default".to_string(),
             features: WorkspaceFeatures {
                 realtime: false,
                 analytics: true,

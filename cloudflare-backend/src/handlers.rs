@@ -1,10 +1,14 @@
-use worker::*;
-use crate::models::*;
-use crate::database::Database;
+use crate::ai::{
+    get_ai_provider, AIAcceptanceCriteriaRequest, AIDependencyAnalysisRequest,
+    AISprintPlanningRequest, AIStoryPointEstimationRequest, AITaskGenerationRequest,
+};
 use crate::auth::{AuthService, Claims};
-use crate::config::{get_auth_config};
+use crate::config::get_auth_config;
+use crate::database::Database;
+use crate::models::*;
 use chrono::Utc;
 use uuid::Uuid;
+use worker::*;
 
 // Health check handler
 pub async fn health_handler(_: Request, _ctx: RouteContext<()>) -> Result<Response> {
@@ -18,7 +22,7 @@ pub async fn health_handler(_: Request, _ctx: RouteContext<()>) -> Result<Respon
             response_time: 1,
         },
         memory: MemoryStatus {
-            used: 50 * 1024 * 1024, // 50MB
+            used: 50 * 1024 * 1024,   // 50MB
             total: 500 * 1024 * 1024, // 500MB
             percentage: 10.0,
         },
@@ -32,11 +36,14 @@ pub async fn auth_verify_handler(mut req: Request, _ctx: RouteContext<()>) -> Re
     let auth_request: AuthRequest = req.json().await?;
     let auth_config = get_auth_config();
     let auth_service = AuthService::new(auth_config);
-    
+
     // Verify credentials based on type
     let authenticated = match auth_request.credentials.r#type.as_str() {
         "password" => {
-            if let (Some(username), Some(password)) = (&auth_request.credentials.username, &auth_request.credentials.password) {
+            if let (Some(username), Some(password)) = (
+                &auth_request.credentials.username,
+                &auth_request.credentials.password,
+            ) {
                 auth_service.verify_credentials(username, password)
             } else {
                 false
@@ -53,7 +60,10 @@ pub async fn auth_verify_handler(mut req: Request, _ctx: RouteContext<()>) -> Re
     };
 
     if authenticated {
-        let username = auth_request.credentials.username.unwrap_or_else(|| "api_user".to_string());
+        let username = auth_request
+            .credentials
+            .username
+            .unwrap_or_else(|| "api_user".to_string());
         let user_id = format!("user_{}", username);
         let session_token = auth_service.create_session_token(user_id, username.clone());
         let permissions = if username == "admin" {
@@ -72,8 +82,8 @@ pub async fn auth_verify_handler(mut req: Request, _ctx: RouteContext<()>) -> Re
         Response::from_json(&ApiResponse::success(auth_response))
     } else {
         Response::from_json(&ApiResponse::<()>::error(
-            "INVALID_CREDENTIALS".to_string(),
-            "Invalid username/password or API key".to_string(),
+            "INVALID_CREDENTIALS",
+            "Invalid username/password or API key",
         ))
     }
 }
@@ -81,23 +91,22 @@ pub async fn auth_verify_handler(mut req: Request, _ctx: RouteContext<()>) -> Re
 pub async fn auth_status_handler(req: Request, _ctx: RouteContext<()>) -> Result<Response> {
     let auth_config = get_auth_config();
     let auth_service = AuthService::new(auth_config);
-    
+
     if let Some(token) = auth_service.extract_auth_header(&req) {
         match auth_service.verify_session_token(&token) {
             Ok(claims) => {
                 let auth_response = AuthResponse {
                     authenticated: true,
                     session_token: Some(token),
-                    expires_at: Some(chrono::DateTime::from_timestamp(claims.exp, 0).unwrap_or_else(|| Utc::now())),
+                    expires_at: Some(
+                        chrono::DateTime::from_timestamp(claims.exp, 0).unwrap_or_else(Utc::now),
+                    ),
                     permissions: claims.permissions,
                 };
                 Response::from_json(&ApiResponse::success(auth_response))
             }
             Err(e) => {
-                Response::from_json(&ApiResponse::<()>::error(
-                    "INVALID_SESSION".to_string(),
-                    e.to_string(),
-                ))
+                Response::from_json(&ApiResponse::<()>::error("INVALID_SESSION", &e.to_string()))
             }
         }
     } else {
@@ -116,25 +125,27 @@ fn is_password_complex(password: &str) -> bool {
     if password.len() < 6 {
         return false;
     }
-    
+
     let has_uppercase = password.chars().any(|c| c.is_uppercase());
     let has_lowercase = password.chars().any(|c| c.is_lowercase());
     let has_number = password.chars().any(|c| c.is_numeric());
     let has_special = password.chars().any(|c| !c.is_alphanumeric());
-    
+
     has_uppercase && has_lowercase && has_number && has_special
 }
 
 pub async fn auth_register_handler(mut req: Request, _ctx: RouteContext<()>) -> Result<Response> {
     let register_request: RegisterRequest = req.json().await?;
-    
+
     // TODO: Implement user persistence (store users in a database)
     // For this implementation, we'll just validate the request and return success
     // In a real system, you would store the user in a database
-    if register_request.username.trim().is_empty() || !is_password_complex(&register_request.password) {
+    if register_request.username.trim().is_empty()
+        || !is_password_complex(&register_request.password)
+    {
         return Response::from_json(&ApiResponse::<()>::error(
-            "VALIDATION_ERROR".to_string(),
-            "Username is required and password must be at least 6 characters, including uppercase, lowercase, number, and special character.".to_string(),
+            "VALIDATION_ERROR",
+            "Username is required and password must be at least 6 characters, including uppercase, lowercase, number, and special character.",
         ));
     }
 
@@ -142,15 +153,18 @@ pub async fn auth_register_handler(mut req: Request, _ctx: RouteContext<()>) -> 
     // Check if user already exists (hardcoded for demo)
     if register_request.username == "admin" || register_request.username == "user" {
         return Response::from_json(&ApiResponse::<()>::error(
-            "USER_EXISTS".to_string(),
-            "Username already exists".to_string(),
+            "USER_EXISTS",
+            "Username already exists",
         ));
     }
 
     let user = User {
         id: Uuid::new_v4().to_string(),
         username: register_request.username.clone(),
-        display_name: register_request.display_name.clone().unwrap_or_else(|| register_request.username.clone()),
+        display_name: register_request
+            .display_name
+            .clone()
+            .unwrap_or_else(|| register_request.username.clone()),
         email: register_request.email.clone(),
         role: "user".to_string(),
         active: true,
@@ -162,11 +176,12 @@ pub async fn auth_register_handler(mut req: Request, _ctx: RouteContext<()>) -> 
 }
 
 pub async fn registration_page_handler(req: Request, _ctx: RouteContext<()>) -> Result<Response> {
-    let host = req.headers()
+    let host = req
+        .headers()
         .get("host")
         .unwrap_or_default()
         .unwrap_or_else(|| "localhost".to_string());
-    
+
     let base_url = if host.contains("localhost") || host.contains("127.0.0.1") {
         format!("http://{}", host)
     } else {
@@ -218,23 +233,25 @@ pub async fn tasks_list_handler(req: Request, ctx: RouteContext<()>) -> Result<R
         Ok(claims) => claims,
         Err(_) => {
             return Response::from_json(&ApiResponse::<()>::error(
-                "UNAUTHORIZED".to_string(),
-                "Authentication required".to_string(),
+                "UNAUTHORIZED",
+                "Authentication required",
             ));
         }
     };
 
     // Check read permission
-    if let Err(_) = require_permission(&claims, "read") {
+    if require_permission(&claims, "read").is_err() {
         return Response::from_json(&ApiResponse::<()>::error(
-            "FORBIDDEN".to_string(),
-            "Read permission required".to_string(),
+            "FORBIDDEN",
+            "Read permission required",
         ));
     }
 
     let url = req.url()?;
-    let query_params = url.query_pairs().collect::<std::collections::HashMap<_, _>>();
-    
+    let query_params = url
+        .query_pairs()
+        .collect::<std::collections::HashMap<_, _>>();
+
     let query = TaskListQuery {
         status: query_params.get("status").map(|s| s.to_string()),
         priority: query_params.get("priority").map(|s| s.to_string()),
@@ -250,8 +267,8 @@ pub async fn tasks_list_handler(req: Request, ctx: RouteContext<()>) -> Result<R
     match db.list_tasks(&query).await {
         Ok(tasks) => Response::from_json(&ApiResponse::success(tasks)),
         Err(e) => Response::from_json(&ApiResponse::<()>::error(
-            "DATABASE_ERROR".to_string(),
-            e.to_string(),
+            "DATABASE_ERROR",
+            &format!("{}", e),
         )),
     }
 }
@@ -262,17 +279,17 @@ pub async fn tasks_create_handler(mut req: Request, ctx: RouteContext<()>) -> Re
         Ok(claims) => claims,
         Err(_) => {
             return Response::from_json(&ApiResponse::<()>::error(
-                "UNAUTHORIZED".to_string(),
-                "Authentication required".to_string(),
+                "UNAUTHORIZED",
+                "Authentication required",
             ));
         }
     };
 
     // Check write permission
-    if let Err(_) = require_permission(&claims, "write") {
+    if require_permission(&claims, "write").is_err() {
         return Response::from_json(&ApiResponse::<()>::error(
-            "FORBIDDEN".to_string(),
-            "Write permission required".to_string(),
+            "FORBIDDEN",
+            "Write permission required",
         ));
     }
 
@@ -280,8 +297,8 @@ pub async fn tasks_create_handler(mut req: Request, ctx: RouteContext<()>) -> Re
         Ok(req) => req,
         Err(e) => {
             return Response::from_json(&ApiResponse::<()>::error(
-                "INVALID_REQUEST".to_string(),
-                format!("Invalid JSON: {}", e),
+                "INVALID_REQUEST",
+                &format!("Invalid JSON: {}", e),
             ));
         }
     };
@@ -290,8 +307,8 @@ pub async fn tasks_create_handler(mut req: Request, ctx: RouteContext<()>) -> Re
     match db.create_task(create_request).await {
         Ok(task) => Response::from_json(&ApiResponse::success(task)),
         Err(e) => Response::from_json(&ApiResponse::<()>::error(
-            "DATABASE_ERROR".to_string(),
-            e.to_string(),
+            "DATABASE_ERROR",
+            &format!("{}", e),
         )),
     }
 }
@@ -301,8 +318,8 @@ pub async fn tasks_get_handler(_req: Request, ctx: RouteContext<()>) -> Result<R
         Some(id) => id,
         None => {
             return Response::from_json(&ApiResponse::<()>::error(
-                "MISSING_PARAMETER".to_string(),
-                "Task ID is required".to_string(),
+                "MISSING_PARAMETER",
+                "Task ID is required",
             ));
         }
     };
@@ -311,8 +328,8 @@ pub async fn tasks_get_handler(_req: Request, ctx: RouteContext<()>) -> Result<R
     match db.get_task(id).await {
         Ok(task) => Response::from_json(&ApiResponse::success(task)),
         Err(e) => Response::from_json(&ApiResponse::<()>::error(
-            "NOT_FOUND".to_string(),
-            format!("Task not found: {}", e),
+            "NOT_FOUND",
+            &format!("Task not found: {}", e),
         )),
     }
 }
@@ -322,8 +339,8 @@ pub async fn tasks_update_handler(mut req: Request, ctx: RouteContext<()>) -> Re
         Some(id) => id,
         None => {
             return Response::from_json(&ApiResponse::<()>::error(
-                "MISSING_PARAMETER".to_string(),
-                "Task ID is required".to_string(),
+                "MISSING_PARAMETER",
+                "Task ID is required",
             ));
         }
     };
@@ -332,8 +349,8 @@ pub async fn tasks_update_handler(mut req: Request, ctx: RouteContext<()>) -> Re
         Ok(req) => req,
         Err(e) => {
             return Response::from_json(&ApiResponse::<()>::error(
-                "INVALID_REQUEST".to_string(),
-                format!("Invalid JSON: {}", e),
+                "INVALID_REQUEST",
+                &format!("Invalid JSON: {}", e),
             ));
         }
     };
@@ -342,8 +359,8 @@ pub async fn tasks_update_handler(mut req: Request, ctx: RouteContext<()>) -> Re
     match db.update_task(id, update_request).await {
         Ok(task) => Response::from_json(&ApiResponse::success(task)),
         Err(e) => Response::from_json(&ApiResponse::<()>::error(
-            "DATABASE_ERROR".to_string(),
-            e.to_string(),
+            "DATABASE_ERROR",
+            &format!("{}", e),
         )),
     }
 }
@@ -353,8 +370,8 @@ pub async fn tasks_delete_handler(_req: Request, ctx: RouteContext<()>) -> Resul
         Some(id) => id,
         None => {
             return Response::from_json(&ApiResponse::<()>::error(
-                "MISSING_PARAMETER".to_string(),
-                "Task ID is required".to_string(),
+                "MISSING_PARAMETER",
+                "Task ID is required",
             ));
         }
     };
@@ -363,8 +380,8 @@ pub async fn tasks_delete_handler(_req: Request, ctx: RouteContext<()>) -> Resul
     match db.delete_task(id).await {
         Ok(_) => Response::from_json(&ApiResponse::success(())),
         Err(e) => Response::from_json(&ApiResponse::<()>::error(
-            "DATABASE_ERROR".to_string(),
-            e.to_string(),
+            "DATABASE_ERROR",
+            &format!("{}", e),
         )),
     }
 }
@@ -374,8 +391,8 @@ pub async fn tasks_bulk_handler(mut req: Request, _ctx: RouteContext<()>) -> Res
         Ok(req) => req,
         Err(e) => {
             return Response::from_json(&ApiResponse::<()>::error(
-                "INVALID_REQUEST".to_string(),
-                format!("Invalid JSON: {}", e),
+                "INVALID_REQUEST",
+                &format!("Invalid JSON: {}", e),
             ));
         }
     };
@@ -397,8 +414,8 @@ pub async fn import_markdown_handler(mut req: Request, _ctx: RouteContext<()>) -
         Ok(req) => req,
         Err(e) => {
             return Response::from_json(&ApiResponse::<()>::error(
-                "INVALID_REQUEST".to_string(),
-                format!("Invalid JSON: {}", e),
+                "INVALID_REQUEST",
+                &format!("Invalid JSON: {}", e),
             ));
         }
     };
@@ -460,15 +477,15 @@ pub async fn users_create_handler(mut req: Request, _ctx: RouteContext<()>) -> R
         Ok(req) => req,
         Err(e) => {
             return Response::from_json(&ApiResponse::<()>::error(
-                "INVALID_REQUEST".to_string(),
-                format!("Invalid JSON: {}", e),
+                "INVALID_REQUEST",
+                &format!("Invalid JSON: {}", e),
             ));
         }
     };
 
     Response::from_json(&ApiResponse::<()>::error(
-        "NOT_IMPLEMENTED".to_string(),
-        "User creation not yet implemented".to_string(),
+        "NOT_IMPLEMENTED",
+        "User creation not yet implemented",
     ))
 }
 
@@ -478,15 +495,15 @@ pub async fn users_update_handler(mut req: Request, ctx: RouteContext<()>) -> Re
         Ok(req) => req,
         Err(e) => {
             return Response::from_json(&ApiResponse::<()>::error(
-                "INVALID_REQUEST".to_string(),
-                format!("Invalid JSON: {}", e),
+                "INVALID_REQUEST",
+                &format!("Invalid JSON: {}", e),
             ));
         }
     };
 
     Response::from_json(&ApiResponse::<()>::error(
-        "NOT_IMPLEMENTED".to_string(),
-        "User update not yet implemented".to_string(),
+        "NOT_IMPLEMENTED",
+        "User update not yet implemented",
     ))
 }
 
@@ -494,8 +511,8 @@ pub async fn users_delete_handler(_req: Request, ctx: RouteContext<()>) -> Resul
     let _id = ctx.param("id");
 
     Response::from_json(&ApiResponse::<()>::error(
-        "NOT_IMPLEMENTED".to_string(),
-        "User deletion not yet implemented".to_string(),
+        "NOT_IMPLEMENTED",
+        "User deletion not yet implemented",
     ))
 }
 
@@ -508,25 +525,24 @@ pub async fn activity_handler(_req: Request, _ctx: RouteContext<()>) -> Result<R
 // Configuration handlers
 pub async fn config_get_handler(_req: Request, _ctx: RouteContext<()>) -> Result<Response> {
     let config = WorkspaceConfig {
-        name: "Taskdown Cloudflare Workspace".to_string(),
-        description: Some("A Cloudflare Workers-based workspace".to_string()),
-        default_task_type: TaskType::Task,
-        available_statuses: vec![
-            TaskStatus::Todo,
-            TaskStatus::InProgress,
-            TaskStatus::InReview,
-            TaskStatus::Done,
-        ],
-        available_priorities: vec![
-            Priority::Critical,
-            Priority::High,
-            Priority::Medium,
-            Priority::Low,
-        ],
-        enable_story_points: true,
-        enable_sprints: true,
-        enable_epics: true,
+        workspace_name: "Taskdown Cloudflare Workspace".to_string(),
+        timezone: "UTC".to_string(),
+        date_format: "MM/DD/YYYY".to_string(),
         theme: "default".to_string(),
+        features: WorkspaceFeatures {
+            realtime: false,
+            analytics: true,
+            webhooks: false,
+            custom_fields: false,
+            ai: false,
+        },
+        limits: WorkspaceLimits {
+            max_tasks: 1000,
+            max_users: 10,
+            api_rate_limit: 100,
+            ai_requests_per_day: Some(50),
+        },
+        ai: None,
     };
 
     Response::from_json(&ApiResponse::success(config))
@@ -537,15 +553,15 @@ pub async fn config_update_handler(mut req: Request, _ctx: RouteContext<()>) -> 
         Ok(config) => config,
         Err(e) => {
             return Response::from_json(&ApiResponse::<()>::error(
-                "INVALID_REQUEST".to_string(),
-                format!("Invalid JSON: {}", e),
+                "INVALID_REQUEST",
+                &format!("Invalid JSON: {}", e),
             ));
         }
     };
 
     Response::from_json(&ApiResponse::<()>::error(
-        "NOT_IMPLEMENTED".to_string(),
-        "Configuration update not yet implemented".to_string(),
+        "NOT_IMPLEMENTED",
+        "Configuration update not yet implemented",
     ))
 }
 
@@ -560,7 +576,7 @@ fn get_database(_ctx: &RouteContext<()>) -> Result<Database> {
 fn authenticate_request(req: &Request) -> std::result::Result<Claims, String> {
     let auth_config = get_auth_config();
     let auth_service = AuthService::new(auth_config);
-    
+
     if let Some(token) = auth_service.extract_auth_header(req) {
         auth_service.verify_session_token(&token)
     } else {
@@ -572,7 +588,7 @@ fn authenticate_request(req: &Request) -> std::result::Result<Claims, String> {
 fn require_permission(claims: &Claims, permission: &str) -> std::result::Result<(), String> {
     let auth_config = get_auth_config();
     let auth_service = AuthService::new(auth_config);
-    
+
     if auth_service.require_permission(claims, permission) {
         Ok(())
     } else {
@@ -585,112 +601,185 @@ pub async fn ai_generate_task_handler(mut req: Request, ctx: RouteContext<()>) -
     // Authenticate user
     let claims = match AuthService::from_request(&req, &ctx.env).await {
         Ok(claims) => claims,
-        Err(_) => return Response::from_json(&ApiResponse::error("unauthorized", "Authentication required")),
+        Err(_) => {
+            return Response::from_json(&ApiResponse::<()>::error(
+                "unauthorized",
+                "Authentication required",
+            ))
+        }
     };
 
     // Check permissions
     if let Err(err) = require_permission(&claims, "write") {
-        return Response::from_json(&ApiResponse::error("forbidden", &err));
+        return Response::from_json(&ApiResponse::<()>::error("forbidden", &err));
     }
 
     // Get AI provider
     let ai_provider = match get_ai_provider(&ctx.env).await? {
         Some(provider) => provider,
-        None => return Response::from_json(&ApiResponse::error("ai_not_configured", "AI features are not configured")),
+        None => {
+            return Response::from_json(&ApiResponse::<()>::error(
+                "ai_not_configured",
+                "AI features are not configured",
+            ))
+        }
     };
 
     // Parse request
     let request: AITaskGenerationRequest = match req.json().await {
         Ok(req) => req,
-        Err(_) => return Response::from_json(&ApiResponse::error("invalid_request", "Invalid request body")),
+        Err(_) => {
+            return Response::from_json(&ApiResponse::<()>::error(
+                "invalid_request",
+                "Invalid request body",
+            ))
+        }
     };
 
     // Generate task details
     match ai_provider.generate_task_details(&request).await {
         Ok(response) => Response::from_json(&ApiResponse::success(response)),
-        Err(e) => Response::from_json(&ApiResponse::error("ai_error", &format!("AI generation failed: {}", e))),
+        Err(e) => Response::from_json(&ApiResponse::<()>::error(
+            "ai_error",
+            &format!("AI generation failed: {}", e),
+        )),
     }
 }
 
-pub async fn ai_acceptance_criteria_handler(mut req: Request, ctx: RouteContext<()>) -> Result<Response> {
+pub async fn ai_acceptance_criteria_handler(
+    mut req: Request,
+    ctx: RouteContext<()>,
+) -> Result<Response> {
     // Authenticate user
     let claims = match AuthService::from_request(&req, &ctx.env).await {
         Ok(claims) => claims,
-        Err(_) => return Response::from_json(&ApiResponse::error("unauthorized", "Authentication required")),
+        Err(_) => {
+            return Response::from_json(&ApiResponse::<()>::error(
+                "unauthorized",
+                "Authentication required",
+            ))
+        }
     };
 
     // Check permissions
     if let Err(err) = require_permission(&claims, "write") {
-        return Response::from_json(&ApiResponse::error("forbidden", &err));
+        return Response::from_json(&ApiResponse::<()>::error("forbidden", &err));
     }
 
     // Get AI provider
     let ai_provider = match get_ai_provider(&ctx.env).await? {
         Some(provider) => provider,
-        None => return Response::from_json(&ApiResponse::error("ai_not_configured", "AI features are not configured")),
+        None => {
+            return Response::from_json(&ApiResponse::<()>::error(
+                "ai_not_configured",
+                "AI features are not configured",
+            ))
+        }
     };
 
     // Parse request
     let request: AIAcceptanceCriteriaRequest = match req.json().await {
         Ok(req) => req,
-        Err(_) => return Response::from_json(&ApiResponse::error("invalid_request", "Invalid request body")),
+        Err(_) => {
+            return Response::from_json(&ApiResponse::<()>::error(
+                "invalid_request",
+                "Invalid request body",
+            ))
+        }
     };
 
     // Generate acceptance criteria
     match ai_provider.generate_acceptance_criteria(&request).await {
         Ok(response) => Response::from_json(&ApiResponse::success(response)),
-        Err(e) => Response::from_json(&ApiResponse::error("ai_error", &format!("AI generation failed: {}", e))),
+        Err(e) => Response::from_json(&ApiResponse::<()>::error(
+            "ai_error",
+            &format!("AI generation failed: {}", e),
+        )),
     }
 }
 
-pub async fn ai_estimate_story_points_handler(mut req: Request, ctx: RouteContext<()>) -> Result<Response> {
+pub async fn ai_estimate_story_points_handler(
+    mut req: Request,
+    ctx: RouteContext<()>,
+) -> Result<Response> {
     // Authenticate user
     let claims = match AuthService::from_request(&req, &ctx.env).await {
         Ok(claims) => claims,
-        Err(_) => return Response::from_json(&ApiResponse::error("unauthorized", "Authentication required")),
+        Err(_) => {
+            return Response::from_json(&ApiResponse::<()>::error(
+                "unauthorized",
+                "Authentication required",
+            ))
+        }
     };
 
     // Check permissions
     if let Err(err) = require_permission(&claims, "write") {
-        return Response::from_json(&ApiResponse::error("forbidden", &err));
+        return Response::from_json(&ApiResponse::<()>::error("forbidden", &err));
     }
 
     // Get AI provider
     let ai_provider = match get_ai_provider(&ctx.env).await? {
         Some(provider) => provider,
-        None => return Response::from_json(&ApiResponse::error("ai_not_configured", "AI features are not configured")),
+        None => {
+            return Response::from_json(&ApiResponse::<()>::error(
+                "ai_not_configured",
+                "AI features are not configured",
+            ))
+        }
     };
 
     // Parse request
     let request: AIStoryPointEstimationRequest = match req.json().await {
         Ok(req) => req,
-        Err(_) => return Response::from_json(&ApiResponse::error("invalid_request", "Invalid request body")),
+        Err(_) => {
+            return Response::from_json(&ApiResponse::<()>::error(
+                "invalid_request",
+                "Invalid request body",
+            ))
+        }
     };
 
     // Estimate story points
     match ai_provider.estimate_story_points(&request).await {
         Ok(response) => Response::from_json(&ApiResponse::success(response)),
-        Err(e) => Response::from_json(&ApiResponse::error("ai_error", &format!("AI estimation failed: {}", e))),
+        Err(e) => Response::from_json(&ApiResponse::<()>::error(
+            "ai_error",
+            &format!("AI estimation failed: {}", e),
+        )),
     }
 }
 
-pub async fn ai_analyze_dependencies_handler(mut req: Request, ctx: RouteContext<()>) -> Result<Response> {
+pub async fn ai_analyze_dependencies_handler(
+    mut req: Request,
+    ctx: RouteContext<()>,
+) -> Result<Response> {
     // Authenticate user
     let claims = match AuthService::from_request(&req, &ctx.env).await {
         Ok(claims) => claims,
-        Err(_) => return Response::from_json(&ApiResponse::error("unauthorized", "Authentication required")),
+        Err(_) => {
+            return Response::from_json(&ApiResponse::<()>::error(
+                "unauthorized",
+                "Authentication required",
+            ))
+        }
     };
 
     // Check permissions
     if let Err(err) = require_permission(&claims, "read") {
-        return Response::from_json(&ApiResponse::error("forbidden", &err));
+        return Response::from_json(&ApiResponse::<()>::error("forbidden", &err));
     }
 
     // For now, return a simple placeholder response
     // In a real implementation, this would use AI to analyze task dependencies
-    let request: AIDependencyAnalysisRequest = match req.json().await {
+    let _request: AIDependencyAnalysisRequest = match req.json().await {
         Ok(req) => req,
-        Err(_) => return Response::from_json(&ApiResponse::error("invalid_request", "Invalid request body")),
+        Err(_) => {
+            return Response::from_json(&ApiResponse::<()>::error(
+                "invalid_request",
+                "Invalid request body",
+            ))
+        }
     };
 
     use crate::ai::AIDependencyAnalysisResponse;
@@ -707,19 +796,29 @@ pub async fn ai_plan_sprint_handler(mut req: Request, ctx: RouteContext<()>) -> 
     // Authenticate user
     let claims = match AuthService::from_request(&req, &ctx.env).await {
         Ok(claims) => claims,
-        Err(_) => return Response::from_json(&ApiResponse::error("unauthorized", "Authentication required")),
+        Err(_) => {
+            return Response::from_json(&ApiResponse::<()>::error(
+                "unauthorized",
+                "Authentication required",
+            ))
+        }
     };
 
     // Check permissions
     if let Err(err) = require_permission(&claims, "read") {
-        return Response::from_json(&ApiResponse::error("forbidden", &err));
+        return Response::from_json(&ApiResponse::<()>::error("forbidden", &err));
     }
 
     // For now, return a simple placeholder response
     // In a real implementation, this would use AI for sprint planning
-    let request: AISprintPlanningRequest = match req.json().await {
+    let _request: AISprintPlanningRequest = match req.json().await {
         Ok(req) => req,
-        Err(_) => return Response::from_json(&ApiResponse::error("invalid_request", "Invalid request body")),
+        Err(_) => {
+            return Response::from_json(&ApiResponse::<()>::error(
+                "invalid_request",
+                "Invalid request body",
+            ))
+        }
     };
 
     use crate::ai::AISprintPlanningResponse;

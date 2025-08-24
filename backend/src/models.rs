@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
 // API Response wrapper
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ApiResponse<T> {
     pub success: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -124,7 +124,7 @@ pub struct TaskRow {
     pub updated_at: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct CreateTaskRequest {
     pub title: String,
     pub r#type: TaskType,
@@ -143,7 +143,7 @@ pub struct CreateTaskRequest {
     pub thumbnail: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct UpdateTaskRequest {
     pub title: Option<String>,
     pub r#type: Option<TaskType>,
@@ -163,12 +163,12 @@ pub struct UpdateTaskRequest {
 }
 
 // Authentication types
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct AuthRequest {
     pub credentials: AuthCredentials,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct AuthCredentials {
     pub r#type: String,
     pub token: Option<String>,
@@ -188,7 +188,7 @@ pub struct AuthVerificationResult {
     pub permissions: Vec<String>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct AuthResponse {
     pub authenticated: bool,
     pub session_token: Option<String>,
@@ -197,7 +197,7 @@ pub struct AuthResponse {
 }
 
 // Workspace types
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct WorkspaceInfo {
     pub id: String,
     pub name: String,
@@ -209,14 +209,14 @@ pub struct WorkspaceInfo {
     pub permissions: WorkspacePermissions,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct WorkspaceOwner {
     pub id: String,
     pub username: String,
     pub display_name: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct WorkspacePermissions {
     pub can_manage_users: bool,
     pub can_modify_settings: bool,
@@ -224,7 +224,7 @@ pub struct WorkspacePermissions {
 }
 
 // Health check types
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct HealthStatus {
     pub status: String,
     pub version: String,
@@ -234,13 +234,13 @@ pub struct HealthStatus {
     pub memory: MemoryStatus,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct DatabaseStatus {
     pub status: String,
     pub response_time: u64,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct MemoryStatus {
     pub used: u64,
     pub total: u64,
@@ -248,7 +248,7 @@ pub struct MemoryStatus {
 }
 
 // Task sync response
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct TaskSyncResponse {
     pub tasks: Vec<Task>,
     pub last_sync: DateTime<Utc>,
@@ -283,7 +283,7 @@ pub struct User {
     pub last_seen: DateTime<Utc>,
 }
 
-#[derive(Debug, Serialize, Deserialize, sqlx::Type)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, sqlx::Type)]
 #[sqlx(type_name = "TEXT", rename_all = "lowercase")]
 pub enum UserRole {
     Admin,
@@ -291,7 +291,7 @@ pub enum UserRole {
     Viewer,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct CreateUserRequest {
     pub username: String,
     pub display_name: String,
@@ -301,7 +301,7 @@ pub struct CreateUserRequest {
 }
 
 // Activity types
-#[derive(Debug, Serialize, FromRow)]
+#[derive(Debug, Serialize, Deserialize, FromRow)]
 pub struct Activity {
     pub id: String,
     pub user_id: String,
@@ -322,7 +322,7 @@ pub struct ActivityDetails {
     pub new_value: Option<serde_json::Value>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ActivityResponse {
     pub activities: Vec<Activity>,
     pub total_count: u32,
@@ -330,7 +330,7 @@ pub struct ActivityResponse {
 }
 
 // Analytics types
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct AnalyticsSummary {
     pub total_tasks: u32,
     pub tasks_by_status: std::collections::HashMap<String, u32>,
@@ -342,7 +342,7 @@ pub struct AnalyticsSummary {
     pub last_updated: DateTime<Utc>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct BurndownData {
     pub sprint: String,
     pub start_date: String,
@@ -351,7 +351,7 @@ pub struct BurndownData {
     pub daily_data: Vec<BurndownDataPoint>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct BurndownDataPoint {
     pub date: String,
     pub remaining_points: u32,
@@ -385,19 +385,19 @@ pub struct WorkspaceLimits {
 }
 
 // Bulk operations
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct BulkOperationsRequest {
     pub operations: Vec<BulkOperation>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct BulkOperation {
     pub r#type: String, // "create", "update", "delete"
     pub task_id: Option<String>,
     pub data: Option<serde_json::Value>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct BulkOperationResult {
     pub operation: String,
     pub task_id: String,
@@ -406,27 +406,268 @@ pub struct BulkOperationResult {
 }
 
 // Import/Export types
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct ImportMarkdownRequest {
     pub markdown: String,
     pub options: Option<ImportOptions>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct ImportOptions {
     pub overwrite: Option<bool>,
     pub preserve_ids: Option<bool>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ImportResult {
     pub imported: u32,
     pub updated: u32,
     pub errors: Vec<String>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ExportResult {
     pub markdown: String,
     pub filename: String,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::Utc;
+
+    #[test]
+    fn test_api_response_success() {
+        let data = "test data";
+        let response = ApiResponse::success(data);
+        
+        assert!(response.success);
+        assert_eq!(response.data, Some(data));
+        assert!(response.error.is_none());
+    }
+
+    #[test]
+    fn test_api_response_error() {
+        let response: ApiResponse<String> = ApiResponse::error(
+            "TEST_ERROR".to_string(), 
+            "Test error message".to_string()
+        );
+        
+        assert!(!response.success);
+        assert!(response.data.is_none());
+        assert!(response.error.is_some());
+        
+        let error = response.error.unwrap();
+        assert_eq!(error.code, "TEST_ERROR");
+        assert_eq!(error.message, "Test error message");
+    }
+
+    #[test]
+    fn test_task_type_enum_serialization() {
+        assert_eq!(format!("{:?}", TaskType::Epic), "Epic");
+        assert_eq!(format!("{:?}", TaskType::Story), "Story");
+        assert_eq!(format!("{:?}", TaskType::Task), "Task");
+        assert_eq!(format!("{:?}", TaskType::Bug), "Bug");
+    }
+
+    #[test]
+    fn test_priority_enum_serialization() {
+        assert_eq!(format!("{:?}", Priority::Critical), "Critical");
+        assert_eq!(format!("{:?}", Priority::High), "High");
+        assert_eq!(format!("{:?}", Priority::Medium), "Medium");
+        assert_eq!(format!("{:?}", Priority::Low), "Low");
+    }
+
+    #[test]
+    fn test_task_status_enum_serialization() {
+        assert_eq!(format!("{:?}", TaskStatus::Todo), "Todo");
+        assert_eq!(format!("{:?}", TaskStatus::InProgress), "InProgress");
+        assert_eq!(format!("{:?}", TaskStatus::InReview), "InReview");
+        assert_eq!(format!("{:?}", TaskStatus::Done), "Done");
+    }
+
+    #[test]
+    fn test_checklist_item_creation() {
+        let item = ChecklistItem {
+            id: Some("test-id".to_string()),
+            text: "Test item".to_string(),
+            completed: false,
+        };
+        
+        assert_eq!(item.id, Some("test-id".to_string()));
+        assert_eq!(item.text, "Test item");
+        assert!(!item.completed);
+    }
+
+    #[test]
+    fn test_task_creation() {
+        let now = Utc::now();
+        let task = Task {
+            id: "test-task-1".to_string(),
+            title: "Test Task".to_string(),
+            r#type: TaskType::Story,
+            priority: Priority::High,
+            status: TaskStatus::Todo,
+            story_points: Some(5),
+            sprint: Some("Sprint 1".to_string()),
+            epic: Some("Epic 1".to_string()),
+            description: "Test description".to_string(),
+            acceptance_criteria: vec![
+                ChecklistItem {
+                    id: Some("ac-1".to_string()),
+                    text: "Should do something".to_string(),
+                    completed: false,
+                }
+            ],
+            technical_tasks: vec![
+                ChecklistItem {
+                    id: Some("tt-1".to_string()),
+                    text: "Implement feature".to_string(),
+                    completed: true,
+                }
+            ],
+            dependencies: vec!["task-2".to_string()],
+            blocks: vec!["task-3".to_string()],
+            assignee: Some("user-1".to_string()),
+            is_favorite: Some(true),
+            thumbnail: None,
+            created_at: now,
+            updated_at: now,
+        };
+        
+        assert_eq!(task.id, "test-task-1");
+        assert_eq!(task.title, "Test Task");
+        assert_eq!(task.r#type, TaskType::Story);
+        assert_eq!(task.priority, Priority::High);
+        assert_eq!(task.status, TaskStatus::Todo);
+        assert_eq!(task.story_points, Some(5));
+        assert_eq!(task.acceptance_criteria.len(), 1);
+        assert_eq!(task.technical_tasks.len(), 1);
+        assert_eq!(task.dependencies.len(), 1);
+        assert_eq!(task.blocks.len(), 1);
+    }
+
+    #[test]
+    fn test_create_task_request() {
+        let request = CreateTaskRequest {
+            title: "New Task".to_string(),
+            r#type: TaskType::Bug,
+            priority: Priority::Critical,
+            status: TaskStatus::Todo,
+            story_points: Some(3),
+            sprint: Some("Sprint 2".to_string()),
+            epic: None,
+            description: "Bug description".to_string(),
+            acceptance_criteria: vec![],
+            technical_tasks: vec![],
+            dependencies: vec![],
+            blocks: vec![],
+            assignee: None,
+            is_favorite: Some(false),
+            thumbnail: None,
+        };
+        
+        assert_eq!(request.title, "New Task");
+        assert_eq!(request.r#type, TaskType::Bug);
+        assert_eq!(request.priority, Priority::Critical);
+        assert_eq!(request.story_points, Some(3));
+    }
+
+    #[test]
+    fn test_update_task_request() {
+        let request = UpdateTaskRequest {
+            title: Some("Updated Title".to_string()),
+            r#type: Some(TaskType::Story),
+            priority: Some(Priority::Low),
+            status: Some(TaskStatus::Done),
+            story_points: Some(Some(8)),
+            sprint: Some(Some("New Sprint".to_string())),
+            epic: Some(None),
+            description: Some("Updated description".to_string()),
+            acceptance_criteria: Some(vec![]),
+            technical_tasks: Some(vec![]),
+            dependencies: Some(vec![]),
+            blocks: Some(vec![]),
+            assignee: Some(Some("new-user".to_string())),
+            is_favorite: Some(Some(true)),
+            thumbnail: Some(None),
+        };
+        
+        assert_eq!(request.title, Some("Updated Title".to_string()));
+        assert_eq!(request.status, Some(TaskStatus::Done));
+    }
+
+    #[test]
+    fn test_user_creation() {
+        let now = Utc::now();
+        let user = User {
+            id: "user-1".to_string(),
+            username: "testuser".to_string(),
+            display_name: "Test User".to_string(),
+            email: "test@example.com".to_string(),
+            role: UserRole::User,
+            avatar: Some("avatar.png".to_string()),
+            is_active: true,
+            last_seen: now,
+        };
+        
+        assert_eq!(user.id, "user-1");
+        assert_eq!(user.username, "testuser");
+        assert_eq!(user.role, UserRole::User);
+        assert!(user.is_active);
+    }
+
+    #[test]
+    fn test_health_status_creation() {
+        let health = HealthStatus {
+            status: "healthy".to_string(),
+            version: "1.0.0".to_string(),
+            uptime: 3600,
+            connections: 10,
+            database: DatabaseStatus {
+                status: "connected".to_string(),
+                response_time: 5,
+            },
+            memory: MemoryStatus {
+                used: 50 * 1024 * 1024,
+                total: 500 * 1024 * 1024,
+                percentage: 10.0,
+            },
+        };
+        
+        assert_eq!(health.status, "healthy");
+        assert_eq!(health.version, "1.0.0");
+        assert_eq!(health.uptime, 3600);
+        assert_eq!(health.connections, 10);
+        assert_eq!(health.database.status, "connected");
+        assert_eq!(health.memory.percentage, 10.0);
+    }
+
+    #[test]
+    fn test_workspace_info_creation() {
+        let workspace = WorkspaceInfo {
+            id: "workspace-1".to_string(),
+            name: "Test Workspace".to_string(),
+            description: Some("Test description".to_string()),
+            server_version: "1.0.0".to_string(),
+            capabilities: vec!["sync".to_string(), "auth".to_string()],
+            last_updated: Utc::now(),
+            owner: WorkspaceOwner {
+                id: "owner-1".to_string(),
+                username: "owner".to_string(),
+                display_name: "Workspace Owner".to_string(),
+            },
+            permissions: WorkspacePermissions {
+                can_manage_users: true,
+                can_modify_settings: false,
+                can_view_analytics: true,
+            },
+        };
+        
+        assert_eq!(workspace.id, "workspace-1");
+        assert_eq!(workspace.name, "Test Workspace");
+        assert_eq!(workspace.capabilities.len(), 2);
+        assert!(workspace.permissions.can_manage_users);
+        assert!(!workspace.permissions.can_modify_settings);
+    }
 }
